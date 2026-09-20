@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HQ Studio - Criador de Histórias em Quadrinhos</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fontes de Estilo HQ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            comic: ['"Comic Neue"', 'cursive', 'sans-serif'],
+            bangers: ['"Bangers"', 'impact', 'cursive'],
+            sans: ['Inter', 'sans-serif']
+          },
+          colors: {
+            comicYellow: '#FFE600',
+            comicRed: '#FF2E4C',
+            comicBlue: '#00A8FF',
+            comicDark: '#1E232A'
+          },
+          boxShadow: {
+            'comic': '4px 4px 0px #000000',
+            'comic-lg': '6px 6px 0px #000000',
+            'comic-sm': '2px 2px 0px #000000'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Estilo de retícula de gibi no fundo */
+    .comic-dots-bg {
+      background-color: #f8fafc;
+      background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+      background-size: 20px 20px;
+    }
+    .comic-border {
+      border: 3px solid #000;
+    }
+    .comic-border-thick {
+      border: 4px solid #000;
+    }
+    /* Estilização da barra de rolagem */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* Alças de transformação de elemento selecionado */
+    .transform-handle {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: #FFE600;
+      border: 2px solid #000;
+      border-radius: 50%;
+      z-index: 50;
+      box-shadow: 0 0 3px rgba(0,0,0,0.4);
+    }
+    .transform-rotate-handle {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: #00A8FF;
+      border: 2px solid #000;
+      border-radius: 50%;
+      top: -24px;
+      left: calc(50% - 8px);
+      cursor: grab;
+      z-index: 50;
+    }
+    .transform-rotate-line {
+      position: absolute;
+      width: 2px;
+      height: 24px;
+      background: #000;
+      top: -24px;
+      left: calc(50% - 1px);
+      z-index: 49;
+    }
+    .element-selected {
+      outline: 2px dashed #000;
+      outline-offset: 4px;
+    }
+    .panel-ui-control {
+      opacity: 0.9;
+      transition: opacity 0.2s ease;
+    }
+    .panel-ui-control:hover {
+      opacity: 1;
+    }
+    .comic-panel-square {
+      aspect-ratio: 1 / 1;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+  <!-- TOPO: Barra de Título e Ferramentas Globais -->
+  <header class="bg-white border-b-4 border-black px-4 py-2.5 flex items-center justify-between shadow-comic-sm z-30 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="bg-comicYellow border-2 border-black px-2.5 py-1 rounded-md shadow-comic-sm transform -rotate-1">
+        <span class="font-bangers text-2xl tracking-wider text-black">HQ STUDIO</span>
+      </div>
+      <span class="text-xs md:text-sm font-comic font-bold text-slate-600 hidden sm:inline">
+        Crie, ilustre e publique seus próprios quadrinhos!
+      </span>
+    </div>
+
+    <!-- Controles Centrais de Layout dos Quadros -->
+    <div class="flex items-center gap-1.5 flex-wrap justify-center">
+      <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border-2 border-black shadow-comic-sm">
+        <span class="text-xs font-bold px-1.5 text-slate-500 uppercase hidden sm:inline">Modo:</span>
+        <button onclick="setLayout('step')" id="btn-layout-step" class="px-2.5 py-1 text-xs font-bold rounded border-2 border-black bg-comicYellow shadow-comic-sm transition flex items-center gap-1" title="Criar quadro a quadro (até 2 quadros quadrados)">
+          <span>➕ 1 por Vez (2 Quadros)</span>
+        </button>
+        <button onclick="setLayout('single')" id="btn-layout-single" class="px-2.5 py-1 text-xs font-bold rounded border border-transparent hover:border-black hover:bg-white transition" title="Quadro Único (Pôster / Capa)">
+          1 Quadro
+        </button>
+        <button onclick="setLayout('strip3')" id="btn-layout-strip3" class="px-2.5 py-1 text-xs font-bold rounded border border-transparent hover:border-black hover:bg-white transition" title="Tira Tradicional de 3 Quadros Quadrados">
+          3 Tiras
+        </button>
+        <button onclick="setLayout('grid4')" id="btn-layout-grid4" class="px-2.5 py-1 text-xs font-bold rounded border border-transparent hover:border-black hover:bg-white transition" title="Página 2x2 com 4 Quadros">
+          2x2 (4 Quadros)
+        </button>
+      </div>
+
+      <!-- Botão de Ação Rápida: + Quadro -->
+      <button onclick="addNewPanel()" id="header-add-panel-btn" class="flex items-center gap-1 bg-amber-300 hover:bg-amber-400 text-black border-2 border-black font-bangers tracking-wider text-xs md:text-sm px-3 py-1.5 rounded shadow-comic-sm transition active:translate-y-0.5" title="Adicionar um novo quadro à história">
+        <span>➕ + QUADRO</span>
+      </button>
+    </div>
+
+    <!-- Botões de Ação: Demo e Limpar -->
+    <div class="flex items-center gap-2">
+      <button onclick="loadSampleStory()" class="hidden md:flex items-center gap-1.5 bg-sky-100 hover:bg-sky-200 text-sky-900 border-2 border-black font-comic font-bold text-xs px-3 py-1.5 rounded shadow-comic-sm transition active:translate-y-0.5" title="Ver uma tira montada como exemplo">
+        <span>✨ Carregar Exemplo</span>
+      </button>
+      <button onclick="confirmClearCanvas()" class="flex items-center gap-1 bg-rose-100 hover:bg-rose-200 text-rose-800 border-2 border-black font-bold text-xs px-2.5 py-1.5 rounded shadow-comic-sm transition active:translate-y-0.5" title="Limpar todos os elementos">
+        <span>🗑️ Limpar</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- CORPO PRINCIPAL: Sidebar Esquerda + Prancheta Central + Painel de Propriedades -->
+  <div class="flex flex-1 overflow-hidden relative">
+
+    <!-- SIDEBAR ESQUERDA: Biblioteca de Recursos (Abas: Balões, Personagens, Cenários, Efeitos) -->
+    <aside class="w-80 md:w-88 bg-white border-r-4 border-black flex flex-col shrink-0 shadow-lg z-20">
+      
+      <!-- Seletor de Abas da Biblioteca -->
+      <div class="grid grid-cols-4 bg-slate-200 border-b-2 border-black p-1 gap-1">
+        <button onclick="switchTab('balloons')" id="tab-btn-balloons" class="tab-btn active bg-comicYellow border-2 border-black rounded py-1.5 text-xs font-bold flex flex-col items-center gap-0.5 shadow-comic-sm">
+          <span class="text-base">💬</span>
+          <span>Balões</span>
+        </button>
+        <button onclick="switchTab('characters')" id="tab-btn-characters" class="tab-btn bg-white hover:bg-slate-100 border-2 border-transparent rounded py-1.5 text-xs font-bold flex flex-col items-center gap-0.5">
+          <span class="text-base">👥</span>
+          <span>Pessoas</span>
+        </button>
+        <button onclick="switchTab('scenery')" id="tab-btn-scenery" class="tab-btn bg-white hover:bg-slate-100 border-2 border-transparent rounded py-1.5 text-xs font-bold flex flex-col items-center gap-0.5">
+          <span class="text-base">🏙️</span>
+          <span>Cenário</span>
+        </button>
+        <button onclick="switchTab('effects')" id="tab-btn-effects" class="tab-btn bg-white hover:bg-slate-100 border-2 border-transparent rounded py-1.5 text-xs font-bold flex flex-col items-center gap-0.5">
+          <span class="text-base">💥</span>
+          <span>Efeitos</span>
+        </button>
+      </div>
+
+      <!-- Dica Rápida -->
+      <div class="bg-amber-50 px-3 py-1.5 border-b border-amber-200 text-[11px] text-amber-800 flex items-center justify-between font-comic">
+        <span>💡 <b>Dica:</b> Clique no item para adicionar ao quadro selecionado!</span>
+      </div>
+
+      <!-- Conteúdo com Scroll da Biblioteca -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-4">
+        
+        <!-- ABA 1: BALÕES DE FALA E NARRAÇÃO -->
+        <div id="tab-content-balloons" class="tab-pane space-y-3">
+          <h3 class="font-bangers tracking-wide text-lg text-slate-800 border-b-2 border-black pb-1 flex items-center justify-between">
+            <span>Balões de Diálogo</span>
+            <span class="text-xs font-sans text-slate-500 font-normal">Personalizáveis</span>
+          </h3>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <!-- Balão de Fala Normal -->
+            <button onclick="addSpeechBubble('speech')" class="group p-2 bg-white rounded-lg border-2 border-black hover:bg-amber-50 hover:shadow-comic-sm transition text-left flex flex-col items-center justify-center">
+              <svg class="w-24 h-16 pointer-events-none drop-shadow-sm group-hover:scale-105 transition" viewBox="0 0 120 70">
+                <path d="M 10 30 Q 10 10 60 10 Q 110 10 110 30 Q 110 50 60 50 L 40 50 L 25 66 L 33 50 Q 10 50 10 30 Z" fill="#ffffff" stroke="#000000" stroke-width="3"/>
+                <text x="60" y="34" font-family="'Comic Neue', cursive" font-weight="bold" font-size="12" text-anchor="middle" fill="#000">Fala Normal</text>
+              </svg>
+              <span class="text-[11px] font-bold mt-1 text-slate-700">Fala Comum</span>
+            </button>
+
+            <!-- Balão de Pensamento -->
+            <button onclick="addSpeechBubble('thought')" class="group p-2 bg-white rounded-lg border-2 border-black hover:bg-amber-50 hover:shadow-comic-sm transition text-left flex flex-col items-center justify-center">
+              <svg class="w-24 h-16 pointer-events-none drop-shadow-sm group-hover:scale-105 transition" viewBox="0 0 120 70">
+                <path d="M 30 25 C 20 20 20 40 30 44 C 35 52 50 52 60 48 C 70 52 85 52 90 44 C 100 40 100 20 90 20 C 85 10 70 10 60 16 C 50 10 35 10 30 25 Z" fill="#ffffff" stroke="#000000" stroke-width="3"/>
+                <circle cx="34" cy="54" r="4" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+                <circle cx="26" cy="62" r="2.5" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+                <text x="60" y="32" font-family="'Comic Neue', cursive" font-weight="bold" font-size="11" text-anchor="middle" fill="#000">Pensamento...</text>
+              </svg>
+              <span class="text-[11px] font-bold mt-1 text-slate-700">Pensamento</span>
+            </button>
+
+            <!-- Balão de Grito / Explosão -->
+            <button onclick="addSpeechBubble('shout')" class="group p-2 bg-white rounded-lg border-2 border-black hover:bg-rose-50 hover:shadow-comic-sm transition text-left flex flex-col items-center justify-center">
+              <svg class="w-24 h-16 pointer-events-none drop-shadow-sm group-hover:scale-105 transition" viewBox="0 0 120 70">
+                <polygon points="15,25 30,10 45,18 60,8 75,20 95,12 88,28 112,32 94,44 105,58 82,52 68,64 55,50 35,68 38,48 10,48 24,35" fill="#FFE600" stroke="#000000" stroke-width="3"/>
+                <text x="60" y="38" font-family="'Bangers', impact" font-size="14" text-anchor="middle" fill="#FF2E4C" stroke="#000" stroke-width="0.5">GRITO!!</text>
+              </svg>
+              <span class="text-[11px] font-bold mt-1 text-rose-700">Grito / Raiva</span>
+            </button>
+
+            <!-- Caixa de Narração Clássica -->
+            <button onclick="addSpeechBubble('narration')" class="group p-2 bg-white rounded-lg border-2 border-black hover:bg-amber-50 hover:shadow-comic-sm transition text-left flex flex-col items-center justify-center">
+              <svg class="w-24 h-16 pointer-events-none drop-shadow-sm group-hover:scale-105 transition" viewBox="0 0 120 70">
+                <rect x="10" y="15" width="100" height="40" rx="3" fill="#FEF08A" stroke="#000000" stroke-width="3"/>
+                <text x="60" y="38" font-family="'Comic Neue', cursive" font-weight="bold" font-size="11" text-anchor="middle" fill="#000">ENQUANTO ISSO...</text>
+              </svg>
+              <span class="text-[11px] font-bold mt-1 text-slate-700">Caixa de Narração</span>
+            </button>
+
+            <!-- Balão de Sussurro (Tracejado) -->
+            <button onclick="addSpeechBubble('whisper')" class="group p-2 bg-white rounded-lg border-2 border-black hover:bg-amber-50 hover:shadow-comic-sm transition text-left flex flex-col items-center justify-center">
+              <svg class="w-24 h-16 pointer-events-none drop-shadow-sm group-hover:scale-105 transition" viewBox="0 0 120 70">
+                <path d="M 12 30 Q 12 12 60 12 Q 108 12 108 30 Q 108 48 60 48 L 42 48 L 28 62 L 34 48 Q 12 48 12 30 Z" fill="#ffffff" stroke="#000000" stroke-width="2.5" stroke-dasharray="4 3"/>
+                <text x="60" y="33" font-family="'Comic Neue', cursive" font-size="11" font-style="italic" text-anchor="middle" fill="#475569">psiu... sussurro</text>
+              </svg>
+              <span class="text-[11px] font-bold mt-1 text-slate-700">Sussurro Secreto</span>
+            </button>
+
+            <!-- Balão de Rádio / Eletrônico -->
+            <button onclick="addSpeechBubble('broadcast')" class="group p-2 bg-white rounded-lg border-2 border-black hover:bg-cyan-50 hover:shadow-comic-sm transition text-left flex flex-col items-center justify-center">
+              <svg class="w-24 h-16 pointer-events-none drop-shadow-sm group-hover:scale-105 transition" viewBox="0 0 120 70">
+                <polygon points="12,18 108,18 114,35 108,52 40,52 30,65 32,52 12,52 6,35" fill="#E0F2FE" stroke="#000000" stroke-width="3"/>
+                <text x="60" y="38" font-family="'Comic Neue', cursive" font-weight="bold" font-size="11" text-anchor="middle" fill="#0369A1">CÂMBIO, NA ESCUTA!</text>
+              </svg>
+              <span class="text-[11px] font-bold mt-1 text-sky-700">Rádio / Comunicador</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ABA 2: PERSONAGENS E PESSOAS COMUNS -->
+        <div id="tab-content-characters" class="tab-pane hidden space-y-3">
+          <h3 class="font-bangers tracking-wide text-lg text-slate-800 border-b-2 border-black pb-1 flex items-center justify-between">
+            <span>Personagens & Alunos</span>
+            <span class="text-xs font-sans text-slate-500 font-normal">Escola & Dia a Dia</span>
+          </h3>
+          <div class="grid grid-cols-2 gap-2.5" id="characters-catalog">
+            <!-- Os cards de personagens serão injetados via JS para manter o código limpo -->
+          </div>
+        </div>
+
+        <!-- ABA 3: ELEMENTOS DE CENÁRIO (Árvores, Montanhas, Prédios) -->
+        <div id="tab-content-scenery" class="tab-pane hidden space-y-3">
+          <h3 class="font-bangers tracking-wide text-lg text-slate-800 border-b-2 border-black pb-1">
+            Cenários & Paisagens
+          </h3>
+          <div class="grid grid-cols-2 gap-2.5" id="scenery-catalog">
+            <!-- Injetado dinamicamente -->
+          </div>
+        </div>
+
+        <!-- ABA 4: EFEITOS ESPECIAIS & ONOMATOPEIAS -->
+        <div id="tab-content-effects" class="tab-pane hidden space-y-3">
+          <h3 class="font-bangers tracking-wide text-lg text-slate-800 border-b-2 border-black pb-1">
+            Onomatopeias & Ação
+          </h3>
+          <div class="grid grid-cols-2 gap-2.5" id="effects-catalog">
+            <!-- Injetado dinamicamente -->
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ÁREA CENTRAL: O Tabuleiro / Prancheta da HQ com Quadros -->
+    <main class="flex-1 flex flex-col comic-dots-bg overflow-auto p-4 md:p-8 relative items-center justify-start w-full">
+      
+      <!-- Indicador do Quadro Ativo e Ação Rápida -->
+      <div class="mb-4 bg-white/95 backdrop-blur px-4 py-1.5 rounded-full border-2 border-black shadow-comic-sm flex items-center gap-3 text-xs font-bold flex-wrap justify-center">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="active-panel-label">Quadro Selecionado: #1</span>
+        </div>
+        <span class="text-slate-300">|</span>
+        <button onclick="addNewPanel()" id="stage-add-panel-btn" class="text-amber-600 hover:text-black hover:underline flex items-center gap-1 font-bangers tracking-wider text-sm transition">
+          <span id="stage-add-panel-text">➕ Adicionar Próximo Quadro</span>
+        </button>
+      </div>
+
+      <!-- Container das Páginas de Quadrinhos (Aproveita a largura ampla da prancheta) -->
+      <div id="comic-stage-wrapper" class="bg-white p-5 md:p-8 rounded-xl border-4 border-black shadow-comic-lg transition-all duration-300 w-full max-w-[1480px]">
+        
+        <!-- Grid de Painéis -->
+        <div id="panels-container" class="gap-5 transition-all duration-300">
+          <!-- Gerado via script baseado no layout escolhido -->
+        </div>
+
+      </div>
+
+      <!-- Rodapé com instruções simples de navegação -->
+      <div class="mt-4 text-xs font-comic text-slate-500 text-center max-w-lg">
+        ⚡ <b>Comandos rápidos:</b> Clique em qualquer elemento para mover, redimensionar pelas bordas ou girar. Use <kbd class="px-1.5 py-0.5 bg-white border border-black rounded shadow-comic-sm font-sans font-bold">Delete</kbd> para excluir o item selecionado.
+      </div>
+    </main>
+
+    <!-- SIDEBAR DIREITA: Inspetor de Propriedades do Elemento Selecionado -->
+    <aside id="properties-panel" class="w-72 bg-white border-l-4 border-black flex flex-col shrink-0 shadow-lg z-20">
+      <div class="p-3 bg-slate-100 border-b-2 border-black flex items-center justify-between">
+        <div class="flex items-center gap-1.5">
+          <span class="text-base">⚙️</span>
+          <h3 class="font-bangers tracking-wide text-lg text-slate-900">Ajustes do Item</h3>
+        </div>
+        <span id="prop-item-type" class="text-[10px] font-bold uppercase bg-amber-200 border border-black px-1.5 py-0.5 rounded">Nenhum</span>
+      </div>
+
+      <!-- Quando NENHUM elemento está selecionado -->
+      <div id="prop-empty-state" class="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-400">
+        <span class="text-4xl mb-2">👆</span>
+        <p class="font-comic font-bold text-sm text-slate-600">Nenhum elemento selecionado</p>
+        <p class="text-xs mt-1 text-slate-400">Clique em qualquer personagem, balão ou cenário para personalizar cores, tamanhos e textos.</p>
+      </div>
+
+      <!-- Formulário de Propriedades do Item Selecionado -->
+      <div id="prop-controls" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+        
+        <!-- Camadas e Ações Rápidas -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-600 uppercase">Posição & Camadas</label>
+            <span id="prop-layer-indicator" class="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded shadow-comic-sm"></span>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button type="button" onclick="bringSelectedForward()" class="px-2 py-1.5 text-xs font-bold bg-slate-100 hover:bg-amber-100 border border-black rounded shadow-comic-sm flex items-center justify-center gap-1 transition active:translate-y-0.5" title="Avançar uma camada à frente">
+              🔼 Para Frente
+            </button>
+            <button type="button" onclick="sendSelectedBackward()" class="px-2 py-1.5 text-xs font-bold bg-slate-100 hover:bg-amber-100 border border-black rounded shadow-comic-sm flex items-center justify-center gap-1 transition active:translate-y-0.5" title="Recuar uma camada para trás">
+              🔽 Para Trás
+            </button>
+            <button type="button" onclick="bringSelectedToFront()" class="px-2 py-1.5 text-xs font-bold bg-slate-100 hover:bg-amber-100 border border-black rounded shadow-comic-sm flex items-center justify-center gap-1 transition active:translate-y-0.5" title="Trazer para a frente de tudo">
+              ⏫ Ao Topo
+            </button>
+            <button type="button" onclick="sendSelectedToBack()" class="px-2 py-1.5 text-xs font-bold bg-slate-100 hover:bg-amber-100 border border-black rounded shadow-comic-sm flex items-center justify-center gap-1 transition active:translate-y-0.5" title="Enviar para trás de tudo">
+              ⏬ Ao Fundo
+            </button>
+            <button type="button" onclick="flipSelectedHorizontal()" class="px-2 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-black rounded shadow-comic-sm flex items-center justify-center gap-1 transition active:translate-y-0.5" title="Inverter horizontalmente">
+              ↔️ Espelhar (Flip)
+            </button>
+            <button type="button" onclick="duplicateSelectedElement()" class="px-2 py-1.5 text-xs font-bold bg-sky-100 hover:bg-sky-200 border border-black rounded shadow-comic-sm flex items-center justify-center gap-1 transition active:translate-y-0.5" title="Criar uma cópia deste item">
+              📄 Duplicar
+            </button>
+          </div>
+        </div>
+
+        <!-- Seção ESPECÍFICA para Balões e Caixas de Texto -->
+        <div id="prop-text-section" class="space-y-3 pt-3 border-t-2 border-slate-200">
+          <label class="block text-xs font-bold text-slate-700 uppercase">Texto do Balão</label>
+          <textarea id="prop-bubble-text" rows="3" oninput="updateSelectedTextContent(this.value)" class="w-full text-sm font-comic border-2 border-black rounded p-2 focus:ring-2 focus:ring-amber-400 focus:outline-none" placeholder="Digite a fala aqui..."></textarea>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[11px] font-bold text-slate-500">Tamanho da Fonte</label>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="changeFontSize(-2)" class="px-1.5 py-0.2 bg-slate-200 hover:bg-slate-300 border border-black rounded text-[10px] font-bold font-mono" title="Diminuir fonte">A-</button>
+                  <button type="button" onclick="changeFontSize(2)" class="px-1.5 py-0.2 bg-slate-200 hover:bg-slate-300 border border-black rounded text-[10px] font-bold font-mono" title="Aumentar fonte">A+</button>
+                </div>
+              </div>
+              <input type="range" id="prop-font-size" min="12" max="44" value="18" oninput="updateSelectedFontSize(this.value)" class="w-full accent-black">
+              <span id="prop-font-size-label" class="text-[10px] font-bold text-slate-500">18px</span>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">Fonte HQ</label>
+              <select id="prop-font-family" onchange="updateSelectedFontFamily(this.value)" class="w-full text-xs font-bold border-2 border-black rounded p-1">
+                <option value="'Comic Neue', cursive">Comic Neue</option>
+                <option value="'Bangers', cursive">Bangers (Ação)</option>
+                <option value="'Inter', sans-serif">Neutro (Sans)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Estilização do Balão (Cor de Fundo e Borda) -->
+          <div class="grid grid-cols-2 gap-2 pt-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Cor do Balão</label>
+              <div class="flex items-center gap-2">
+                <input type="color" id="prop-bubble-fill" oninput="updateSelectedFillColor(this.value)" onchange="updateSelectedFillColor(this.value)" class="w-8 h-8 rounded border-2 border-black cursor-pointer p-0.5">
+                <span class="text-xs font-mono" id="prop-bubble-fill-val">#ffffff</span>
+              </div>
+              <!-- Paleta rápida de fundo do balão -->
+              <div class="flex items-center gap-1 mt-1.5 flex-wrap">
+                <button type="button" onclick="updateSelectedFillColor('#ffffff')" class="w-4 h-4 rounded-full bg-white border-2 border-black hover:scale-125 transition" title="Branco"></button>
+                <button type="button" onclick="updateSelectedFillColor('#FFE600')" class="w-4 h-4 rounded-full bg-yellow-300 border border-black hover:scale-125 transition" title="Amarelo HQ"></button>
+                <button type="button" onclick="updateSelectedFillColor('#E0F2FE')" class="w-4 h-4 rounded-full bg-sky-200 border border-black hover:scale-125 transition" title="Azul Claro"></button>
+                <button type="button" onclick="updateSelectedFillColor('#FCE7F3')" class="w-4 h-4 rounded-full bg-pink-200 border border-black hover:scale-125 transition" title="Rosa"></button>
+                <button type="button" onclick="updateSelectedFillColor('#DCFCE7')" class="w-4 h-4 rounded-full bg-emerald-200 border border-black hover:scale-125 transition" title="Verde"></button>
+                <button type="button" onclick="updateSelectedFillColor('#1E293B')" class="w-4 h-4 rounded-full bg-slate-800 border border-black hover:scale-125 transition" title="Escuro"></button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Cor do Texto</label>
+              <div class="flex items-center gap-2">
+                <input type="color" id="prop-text-color" oninput="updateSelectedTextColor(this.value)" onchange="updateSelectedTextColor(this.value)" class="w-8 h-8 rounded border-2 border-black cursor-pointer p-0.5">
+                <span class="text-xs font-mono" id="prop-text-color-val">#000000</span>
+              </div>
+              <!-- Paleta rápida de cor do texto -->
+              <div class="flex items-center gap-1 mt-1.5 flex-wrap">
+                <button type="button" onclick="updateSelectedTextColor('#000000')" class="w-4 h-4 rounded-full bg-black border border-slate-400 hover:scale-125 transition" title="Preto"></button>
+                <button type="button" onclick="updateSelectedTextColor('#DC2626')" class="w-4 h-4 rounded-full bg-red-600 border border-slate-300 hover:scale-125 transition" title="Vermelho"></button>
+                <button type="button" onclick="updateSelectedTextColor('#2563EB')" class="w-4 h-4 rounded-full bg-blue-600 border border-slate-300 hover:scale-125 transition" title="Azul"></button>
+                <button type="button" onclick="updateSelectedTextColor('#16A34A')" class="w-4 h-4 rounded-full bg-green-600 border border-slate-300 hover:scale-125 transition" title="Verde"></button>
+                <button type="button" onclick="updateSelectedTextColor('#9333EA')" class="w-4 h-4 rounded-full bg-purple-600 border border-slate-300 hover:scale-125 transition" title="Roxo"></button>
+                <button type="button" onclick="updateSelectedTextColor('#FFFFFF')" class="w-4 h-4 rounded-full bg-white border-2 border-black hover:scale-125 transition" title="Branco"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Orientação do Rabo do Balão (Se aplicável) -->
+          <div id="prop-tail-direction-box" class="pt-1">
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Direção da Cauda</label>
+            <div class="flex gap-2">
+              <button onclick="setBubbleTail('left')" id="btn-tail-left" class="flex-1 py-1 text-xs font-bold border-2 border-black rounded bg-comicYellow shadow-comic-sm transition">
+                👈 Esquerda
+              </button>
+              <button onclick="setBubbleTail('right')" id="btn-tail-right" class="flex-1 py-1 text-xs font-bold border-2 border-black rounded bg-slate-100 hover:bg-slate-200 transition">
+                Direita 👉
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opacidade e Escala Geral -->
+        <div class="space-y-2 pt-3 border-t-2 border-slate-200">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Opacidade: <span id="prop-opacity-val">100%</span></label>
+            <input type="range" id="prop-opacity" min="20" max="100" value="100" oninput="updateSelectedOpacity(this.value)" class="w-full accent-black">
+          </div>
+        </div>
+
+        <!-- Botão Deletar Item -->
+        <div class="pt-4">
+          <button onclick="deleteSelectedElement()" class="w-full py-2 bg-rose-500 hover:bg-rose-600 text-white font-bangers text-base tracking-wider rounded border-2 border-black shadow-comic transition flex items-center justify-center gap-1.5 active:translate-y-0.5 active:shadow-none">
+            <span>🗑️ EXCLUIR ELEMENTO</span>
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- TOAST / NOTIFICAÇÃO (Substitui alert() de forma elegante) -->
+  <div id="toast-msg" class="fixed bottom-6 right-6 bg-comicYellow border-3 border-black p-3 rounded-lg shadow-comic-lg flex items-center gap-2 transform translate-y-24 opacity-0 transition-all duration-300 z-50 pointer-events-none">
+    <span class="text-xl" id="toast-icon">✨</span>
+    <span class="font-comic font-bold text-sm text-black" id="toast-text">Ação concluída com sucesso!</span>
+  </div>
+
+  <!-- MODAL DE CONFIRMAÇÃO PARA LIMPAR -->
+  <div id="confirm-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white border-4 border-black p-6 rounded-xl max-w-sm w-full shadow-comic-lg text-center transform scale-95 transition-all">
+      <span class="text-4xl">⚠️</span>
+      <h3 class="font-bangers text-2xl mt-2 tracking-wide">Limpar Tudo?</h3>
+      <p class="font-comic text-sm text-slate-600 mt-1">Todos os personagens, balões e cenários dos quadros serão removidos. Deseja continuar?</p>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeConfirmModal()" class="flex-1 py-2 font-bold text-xs uppercase bg-slate-200 hover:bg-slate-300 border-2 border-black rounded shadow-comic-sm">
+          Cancelar
+        </button>
+        <button onclick="executeClearCanvas()" class="flex-1 py-2 font-bangers tracking-wider text-base bg-rose-500 hover:bg-rose-600 text-white border-2 border-black rounded shadow-comic">
+          Sim, Limpar!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       ESTADO GERAL DA APLICAÇÃO HQ STUDIO
+       ========================================================================= */
+    const state = {
+      currentLayout: 'step', // 'step', 'single', 'strip3', 'grid4'
+      activePanelIndex: 0,
+      panels: [], // Dados e referências dos quadros
+      selectedElement: null,
+      draggedItem: null,
+      elementCounter: 0,
+      isInteracting: false
+    };
+
+    /* ASSETS VETORIAIS DE ALTA QUALIDADE: Personagens, Cenários e Efeitos */
+    const ASSETS = {
+      characters: [
+        {
+          id: 'student_boy',
+          name: 'Estudante (Menino)',
+          tags: 'menino aluno escola estudante crianca jovem',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Mochila nas costas -->
+            <rect x="22" y="52" width="16" height="34" rx="4" fill="#16A34A" stroke="#000" stroke-width="2.5"/>
+            <rect x="24" y="58" width="12" height="18" rx="2" fill="#22C55E"/>
+            <!-- Camiseta Listrada Azul e Branca -->
+            <path d="M 36 48 L 64 48 L 62 84 L 38 84 Z" fill="#00A8FF" stroke="#000" stroke-width="2.5"/>
+            <rect x="37" y="56" width="26" height="6" fill="#FFFFFF"/>
+            <rect x="37" y="68" width="25" height="6" fill="#FFFFFF"/>
+            <!-- Bermuda Jeans -->
+            <rect x="38" y="84" width="24" height="18" fill="#1D4ED8" stroke="#000" stroke-width="2.5"/>
+            <line x1="50" y1="88" x2="50" y2="102" stroke="#000" stroke-width="1.8"/>
+            <!-- Pernas -->
+            <rect x="41" y="102" width="7" height="14" fill="#FED7AA" stroke="#000" stroke-width="2"/>
+            <rect x="52" y="102" width="7" height="14" fill="#FED7AA" stroke="#000" stroke-width="2"/>
+            <!-- Tênis Vermelho -->
+            <ellipse cx="43" cy="119" rx="8" ry="5" fill="#FF2E4C" stroke="#000" stroke-width="2"/>
+            <ellipse cx="57" cy="119" rx="8" ry="5" fill="#FF2E4C" stroke="#000" stroke-width="2"/>
+            <!-- Braços e Mãos -->
+            <path d="M 36 50 L 26 70 L 32 74 L 39 56 Z" fill="#00A8FF" stroke="#000" stroke-width="2"/>
+            <circle cx="28" cy="74" r="5" fill="#FED7AA" stroke="#000" stroke-width="1.8"/>
+            <path d="M 64 50 L 74 70 L 68 74 L 61 56 Z" fill="#00A8FF" stroke="#000" stroke-width="2"/>
+            <circle cx="72" cy="74" r="5" fill="#FED7AA" stroke="#000" stroke-width="1.8"/>
+            <!-- Pescoço e Cabeça -->
+            <rect x="46" y="42" width="8" height="8" fill="#FED7AA" stroke="#000" stroke-width="2"/>
+            <circle cx="50" cy="30" r="15" fill="#FED7AA" stroke="#000" stroke-width="2.5"/>
+            <!-- Cabelo Castanho -->
+            <path d="M 36 28 C 36 15 48 12 60 14 C 64 16 66 22 66 28 C 62 25 56 25 50 25 C 42 25 38 27 36 28 Z" fill="#78350F" stroke="#000" stroke-width="1.5"/>
+            <!-- Boné Vermelho Virado -->
+            <ellipse cx="50" cy="20" rx="15" ry="8" fill="#EF4444" stroke="#000" stroke-width="2"/>
+            <path d="M 62 20 Q 72 20 74 24 Q 68 25 62 23 Z" fill="#DC2626" stroke="#000" stroke-width="1.5"/>
+            <circle cx="50" cy="16" r="2.5" fill="#FFE600" stroke="#000" stroke-width="1"/>
+            <!-- Rosto: Olhos, Sardas, Sorriso -->
+            <circle cx="45" cy="30" r="2.5" fill="#0F172A"/>
+            <circle cx="55" cy="30" r="2.5" fill="#0F172A"/>
+            <circle cx="41" cy="34" r="0.8" fill="#D97706"/>
+            <circle cx="43" cy="35" r="0.8" fill="#D97706"/>
+            <circle cx="57" cy="35" r="0.8" fill="#D97706"/>
+            <circle cx="59" cy="34" r="0.8" fill="#D97706"/>
+            <path d="M 46 36 Q 50 41 55 36" stroke="#000" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          </svg>`
+        },
+        {
+          id: 'student_girl',
+          name: 'Estudante (Menina)',
+          tags: 'menina aluna escola estudante crianca jovem',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Mochila Rosa nas costas -->
+            <rect x="62" y="50" width="15" height="32" rx="4" fill="#EC4899" stroke="#000" stroke-width="2.5"/>
+            <circle cx="70" cy="62" r="3" fill="#F472B6"/>
+            <!-- Marias Chiquinhas / Cabelo Castanho -->
+            <ellipse cx="30" cy="34" rx="7" ry="12" fill="#5B3317" stroke="#000" stroke-width="2" transform="rotate(-15 30 34)"/>
+            <circle cx="34" cy="26" r="3" fill="#FACC15" stroke="#000" stroke-width="1.5"/>
+            <ellipse cx="70" cy="34" rx="7" ry="12" fill="#5B3317" stroke="#000" stroke-width="2" transform="rotate(15 70 34)"/>
+            <circle cx="66" cy="26" r="3" fill="#FACC15" stroke="#000" stroke-width="1.5"/>
+            <!-- Camiseta Amarela + Colete Jeans -->
+            <path d="M 36 48 L 64 48 L 62 82 L 38 82 Z" fill="#FBBF24" stroke="#000" stroke-width="2.5"/>
+            <path d="M 36 48 L 44 48 L 46 82 L 38 82 Z" fill="#3B82F6" stroke="#000" stroke-width="1.5"/>
+            <path d="M 64 48 L 56 48 L 54 82 L 62 82 Z" fill="#3B82F6" stroke="#000" stroke-width="1.5"/>
+            <!-- Saia Azul Pregueada -->
+            <polygon points="36,82 64,82 68,98 32,98" fill="#1E40AF" stroke="#000" stroke-width="2.5"/>
+            <line x1="44" y1="84" x2="43" y2="98" stroke="#000" stroke-width="1.5"/>
+            <line x1="56" y1="84" x2="57" y2="98" stroke="#000" stroke-width="1.5"/>
+            <!-- Pernas -->
+            <rect x="40" y="98" width="6" height="18" fill="#FFEDD5" stroke="#000" stroke-width="2"/>
+            <rect x="54" y="98" width="6" height="18" fill="#FFEDD5" stroke="#000" stroke-width="2"/>
+            <!-- Tênis Roxo -->
+            <ellipse cx="42" cy="119" rx="7" ry="4.5" fill="#8B5CF6" stroke="#000" stroke-width="2"/>
+            <ellipse cx="58" cy="119" rx="7" ry="4.5" fill="#8B5CF6" stroke="#000" stroke-width="2"/>
+            <!-- Braços -->
+            <path d="M 36 50 L 26 70 L 32 74 L 39 56 Z" fill="#FBBF24" stroke="#000" stroke-width="2"/>
+            <circle cx="28" cy="74" r="5" fill="#FFEDD5" stroke="#000" stroke-width="1.8"/>
+            <path d="M 64 50 L 74 70 L 68 74 L 61 56 Z" fill="#FBBF24" stroke="#000" stroke-width="2"/>
+            <circle cx="72" cy="74" r="5" fill="#FFEDD5" stroke="#000" stroke-width="1.8"/>
+            <!-- Cabeça e Rosto -->
+            <rect x="46" y="42" width="8" height="8" fill="#FFEDD5" stroke="#000" stroke-width="2"/>
+            <circle cx="50" cy="30" r="15" fill="#FFEDD5" stroke="#000" stroke-width="2.5"/>
+            <!-- Franja -->
+            <path d="M 35 25 Q 50 32 65 25 Q 60 16 50 16 Q 40 16 35 25 Z" fill="#5B3317"/>
+            <ellipse cx="44" cy="30" rx="3.5" ry="4.5" fill="#0F172A"/>
+            <circle cx="45" cy="28.5" r="1.5" fill="#FFF"/>
+            <ellipse cx="56" cy="30" rx="3.5" ry="4.5" fill="#0F172A"/>
+            <circle cx="57" cy="28.5" r="1.5" fill="#FFF"/>
+            <path d="M 46 38 Q 50 43 54 38" stroke="#E11D48" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>`
+        },
+        {
+          id: 'teacher_woman',
+          name: 'Professora',
+          tags: 'professora escola aula mulher livro adulta',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Blazer Verde Elegante -->
+            <path d="M 34 46 L 66 46 L 62 86 L 38 86 Z" fill="#059669" stroke="#000" stroke-width="2.5"/>
+            <polygon points="50,46 44,66 56,66" fill="#FFFFFF" stroke="#000" stroke-width="1.5"/>
+            <circle cx="47" cy="48" r="1.5" fill="#FDE047"/>
+            <circle cx="50" cy="49" r="1.5" fill="#FDE047"/>
+            <circle cx="53" cy="48" r="1.5" fill="#FDE047"/>
+            <!-- Calça Azul Marinho -->
+            <rect x="38" y="86" width="24" height="26" fill="#1E293B" stroke="#000" stroke-width="2.5"/>
+            <ellipse cx="43" cy="118" rx="7" ry="4" fill="#000"/>
+            <ellipse cx="57" cy="118" rx="7" ry="4" fill="#000"/>
+            <!-- Braço Esquerdo segurando Livro -->
+            <path d="M 34 48 L 22 72 L 30 76 L 38 56 Z" fill="#059669" stroke="#000" stroke-width="2"/>
+            <rect x="14" y="66" width="16" height="22" rx="2" fill="#0284C7" stroke="#000" stroke-width="2"/>
+            <line x1="16" y1="70" x2="26" y2="70" stroke="#FFF" stroke-width="1.5"/>
+            <circle cx="28" cy="78" r="4.5" fill="#FED7AA" stroke="#000" stroke-width="1.5"/>
+            <!-- Braço Direito Apontando -->
+            <path d="M 66 48 L 78 64 L 74 68 L 62 56 Z" fill="#059669" stroke="#000" stroke-width="2"/>
+            <circle cx="80" cy="66" r="4.5" fill="#FED7AA" stroke="#000" stroke-width="1.5"/>
+            <line x1="82" y1="64" x2="88" y2="58" stroke="#FED7AA" stroke-width="3" stroke-linecap="round"/>
+            <!-- Cabeça com Coque Elegante -->
+            <rect x="46" y="40" width="8" height="8" fill="#FED7AA" stroke="#000" stroke-width="2"/>
+            <circle cx="50" cy="28" r="14" fill="#FED7AA" stroke="#000" stroke-width="2.5"/>
+            <circle cx="50" cy="12" r="8" fill="#3E2723" stroke="#000" stroke-width="2"/>
+            <path d="M 36 24 C 36 12 64 12 64 24 C 60 20 54 20 50 20 C 44 20 40 20 36 24 Z" fill="#3E2723" stroke="#000" stroke-width="2"/>
+            <!-- Óculos Vermelhos -->
+            <rect x="38" y="24" width="10" height="7" rx="1.5" fill="#E0F2FE" stroke="#DC2626" stroke-width="2"/>
+            <rect x="52" y="24" width="10" height="7" rx="1.5" fill="#E0F2FE" stroke="#DC2626" stroke-width="2"/>
+            <line x1="48" y1="27" x2="52" y2="27" stroke="#DC2626" stroke-width="2"/>
+            <circle cx="43" cy="27.5" r="1.8" fill="#000"/>
+            <circle cx="57" cy="27.5" r="1.8" fill="#000"/>
+            <path d="M 46 36 Q 50 39 54 36" stroke="#E11D48" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>`
+        },
+        {
+          id: 'teacher_man',
+          name: 'Professor',
+          tags: 'professor escola aula homem livro adulto',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Suéter Cinza sobre Camisa Azul Clara -->
+            <path d="M 34 46 L 66 46 L 62 86 L 38 86 Z" fill="#64748B" stroke="#000" stroke-width="2.5"/>
+            <polygon points="50,46 45,58 55,58" fill="#38BDF8" stroke="#000" stroke-width="1.5"/>
+            <polygon points="50,54 48,68 52,68" fill="#DC2626"/>
+            <!-- Calça Cáqui -->
+            <rect x="38" y="86" width="24" height="26" fill="#D97706" stroke="#000" stroke-width="2.5"/>
+            <line x1="50" y1="88" x2="50" y2="112" stroke="#000" stroke-width="1.8"/>
+            <ellipse cx="43" cy="118" rx="7" ry="4.5" fill="#78350F" stroke="#000" stroke-width="2"/>
+            <ellipse cx="57" cy="118" rx="7" ry="4.5" fill="#78350F" stroke="#000" stroke-width="2"/>
+            <!-- Braço Esquerdo com Pasta -->
+            <path d="M 34 48 L 24 72 L 30 76 L 38 56 Z" fill="#64748B" stroke="#000" stroke-width="2"/>
+            <rect x="18" y="70" width="14" height="18" rx="2" fill="#78350F" stroke="#000" stroke-width="2"/>
+            <circle cx="28" cy="74" r="4.5" fill="#FDE68A" stroke="#000" stroke-width="1.5"/>
+            <!-- Braço Direito com Giz -->
+            <path d="M 66 48 L 76 68 L 70 72 L 62 56 Z" fill="#64748B" stroke="#000" stroke-width="2"/>
+            <circle cx="74" cy="70" r="4.5" fill="#FDE68A" stroke="#000" stroke-width="1.5"/>
+            <line x1="74" y1="70" x2="80" y2="65" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+            <!-- Cabeça com Barba e Óculos -->
+            <rect x="46" y="40" width="8" height="8" fill="#FDE68A" stroke="#000" stroke-width="2"/>
+            <circle cx="50" cy="28" r="14" fill="#FDE68A" stroke="#000" stroke-width="2.5"/>
+            <path d="M 36 24 C 36 12 64 12 64 24 C 60 18 52 18 46 18 C 40 18 38 20 36 24 Z" fill="#1E293B" stroke="#000" stroke-width="2"/>
+            <path d="M 40 32 Q 50 44 60 32 Q 56 40 50 40 Q 44 40 40 32 Z" fill="#1E293B"/>
+            <circle cx="43" cy="26" r="4.5" fill="#E0F2FE" stroke="#000" stroke-width="2"/>
+            <circle cx="57" cy="26" r="4.5" fill="#E0F2FE" stroke="#000" stroke-width="2"/>
+            <line x1="47.5" y1="26" x2="52.5" y2="26" stroke="#000" stroke-width="2"/>
+            <circle cx="43" cy="26" r="1.8" fill="#000"/>
+            <circle cx="57" cy="26" r="1.8" fill="#000"/>
+            <path d="M 47 34 Q 50 37 53 34" stroke="#000" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          </svg>`
+        },
+        {
+          id: 'grandpa',
+          name: 'Vovô Simpático',
+          tags: 'vovo idoso senhor velhinho familia bengala',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Colete Marrom sobre Camisa Amarela -->
+            <path d="M 34 46 L 66 46 L 62 86 L 38 86 Z" fill="#854D0E" stroke="#000" stroke-width="2.5"/>
+            <polygon points="50,46 45,62 55,62" fill="#FEF08A" stroke="#000" stroke-width="1.5"/>
+            <!-- Calça Confortável Cinza -->
+            <rect x="38" y="86" width="24" height="26" fill="#64748B" stroke="#000" stroke-width="2.5"/>
+            <line x1="50" y1="88" x2="50" y2="112" stroke="#000" stroke-width="1.8"/>
+            <ellipse cx="42" cy="118" rx="8" ry="4.5" fill="#451A03" stroke="#000" stroke-width="2"/>
+            <ellipse cx="58" cy="118" rx="8" ry="4.5" fill="#451A03" stroke="#000" stroke-width="2"/>
+            <!-- Braço Direito segurando Bengala -->
+            <path d="M 66 48 L 76 74 L 70 76 L 62 56 Z" fill="#854D0E" stroke="#000" stroke-width="2"/>
+            <circle cx="74" cy="76" r="4.5" fill="#FED7AA" stroke="#000" stroke-width="1.5"/>
+            <path d="M 74 68 C 74 62 82 62 82 68 L 82 120" stroke="#78350F" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+            <!-- Braço Esquerdo -->
+            <path d="M 34 48 L 26 70 L 32 74 L 39 56 Z" fill="#854D0E" stroke="#000" stroke-width="2"/>
+            <circle cx="28" cy="74" r="4.5" fill="#FED7AA" stroke="#000" stroke-width="1.5"/>
+            <!-- Cabeça com Cabelo Branco Lateral e Bigode -->
+            <rect x="46" y="40" width="8" height="8" fill="#FED7AA" stroke="#000" stroke-width="2"/>
+            <circle cx="50" cy="28" r="14" fill="#FED7AA" stroke="#000" stroke-width="2.5"/>
+            <path d="M 36 28 C 34 20 38 18 40 22 M 64 28 C 66 20 62 18 60 22" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round"/>
+            <path d="M 50 33 Q 44 31 42 35 Q 48 37 50 35 Q 52 37 58 35 Q 56 31 50 33 Z" fill="#F1F5F9" stroke="#000" stroke-width="1"/>
+            <circle cx="44" cy="27" r="3.5" fill="#E0F2FE" stroke="#000" stroke-width="1.8"/>
+            <circle cx="56" cy="27" r="3.5" fill="#E0F2FE" stroke="#000" stroke-width="1.8"/>
+            <line x1="47.5" y1="27" x2="52.5" y2="27" stroke="#000" stroke-width="1.8"/>
+            <circle cx="44" cy="27" r="1.5" fill="#000"/>
+            <circle cx="56" cy="27" r="1.5" fill="#000"/>
+            <path d="M 46 38 Q 50 41 54 38" stroke="#000" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          </svg>`
+        },
+        {
+          id: 'grandma',
+          name: 'Vovó Acolhedora',
+          tags: 'vovo idosa senhora velhinha familia casa',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Vestido Lilás -->
+            <path d="M 34 46 L 66 46 L 72 108 L 28 108 Z" fill="#A855F7" stroke="#000" stroke-width="2.5"/>
+            <!-- Avental com Bolso -->
+            <path d="M 40 60 L 60 60 L 64 104 L 36 104 Z" fill="#FFFFFF" stroke="#000" stroke-width="2"/>
+            <rect x="44" y="78" width="12" height="10" rx="2" fill="#F472B6" stroke="#000" stroke-width="1.5"/>
+            <!-- Xale nos Ombros -->
+            <path d="M 34 46 Q 50 56 66 46 L 64 54 Q 50 62 36 54 Z" fill="#7E22CE" stroke="#000" stroke-width="1.5"/>
+            <ellipse cx="40" cy="116" rx="7" ry="4" fill="#1E293B" stroke="#000" stroke-width="2"/>
+            <ellipse cx="60" cy="116" rx="7" ry="4" fill="#1E293B" stroke="#000" stroke-width="2"/>
+            <!-- Braços segurando Xícara -->
+            <path d="M 34 48 L 26 70 L 38 72 Z" fill="#A855F7" stroke="#000" stroke-width="2"/>
+            <path d="M 66 48 L 74 70 L 62 72 Z" fill="#A855F7" stroke="#000" stroke-width="2"/>
+            <rect x="43" y="66" width="14" height="10" rx="2" fill="#FEF08A" stroke="#000" stroke-width="1.8"/>
+            <path d="M 57 68 C 61 68 61 74 57 74" fill="none" stroke="#000" stroke-width="1.8"/>
+            <path d="M 48 62 Q 50 58 52 62" stroke="#94A3B8" stroke-width="1.5" fill="none"/>
+            <!-- Cabeça e Coque Grisalho -->
+            <rect x="46" y="38" width="8" height="8" fill="#FFEDD5" stroke="#000" stroke-width="2"/>
+            <circle cx="50" cy="26" r="14" fill="#FFEDD5" stroke="#000" stroke-width="2.5"/>
+            <circle cx="50" cy="10" r="7" fill="#E2E8F0" stroke="#000" stroke-width="2"/>
+            <path d="M 36 22 C 36 12 64 12 64 22 Q 50 18 36 22 Z" fill="#E2E8F0" stroke="#000" stroke-width="2"/>
+            <!-- Óculos Ovais -->
+            <ellipse cx="43" cy="25" rx="4" ry="3" fill="#E0F2FE" stroke="#000" stroke-width="1.8"/>
+            <ellipse cx="57" cy="25" rx="4" ry="3" fill="#E0F2FE" stroke="#000" stroke-width="1.8"/>
+            <line x1="47" y1="25" x2="53" y2="25" stroke="#000" stroke-width="1.8"/>
+            <circle cx="43" cy="25" r="1.5" fill="#000"/>
+            <circle cx="57" cy="25" r="1.5" fill="#000"/>
+            <circle cx="39" cy="29" r="2.5" fill="#F472B6" opacity="0.6"/>
+            <circle cx="61" cy="29" r="2.5" fill="#F472B6" opacity="0.6"/>
+            <path d="M 47 32 Q 50 36 53 32" stroke="#E11D48" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>`
+        },
+        {
+          id: 'teen_headphones',
+          name: 'Jovem com Fone',
+          tags: 'adolescente jovem musica fone skate rua',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Moletom Laranja com Capuz -->
+            <path d="M 34 48 L 66 48 L 62 86 L 38 86 Z" fill="#F97316" stroke="#000" stroke-width="2.5"/>
+            <rect x="42" y="70" width="16" height="12" rx="3" fill="#EA580C" stroke="#000" stroke-width="1.5"/>
+            <line x1="46" y1="48" x2="46" y2="60" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+            <line x1="54" y1="48" x2="54" y2="60" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+            <!-- Calça Jeans com Rasgo -->
+            <rect x="38" y="86" width="24" height="26" fill="#2563EB" stroke="#000" stroke-width="2.5"/>
+            <line x1="50" y1="88" x2="50" y2="112" stroke="#000" stroke-width="1.8"/>
+            <line x1="42" y1="98" x2="46" y2="98" stroke="#FFFFFF" stroke-width="2"/>
+            <ellipse cx="42" cy="118" rx="8" ry="4.5" fill="#0F172A" stroke="#000" stroke-width="2"/>
+            <ellipse cx="58" cy="118" rx="8" ry="4.5" fill="#0F172A" stroke="#000" stroke-width="2"/>
+            <!-- Braços nos Bolsos -->
+            <path d="M 34 50 L 26 70 L 42 74" fill="none" stroke="#F97316" stroke-width="7" stroke-linecap="round"/>
+            <path d="M 34 50 L 26 70 L 42 74" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+            <path d="M 66 50 L 74 70 L 58 74" fill="none" stroke="#F97316" stroke-width="7" stroke-linecap="round"/>
+            <path d="M 66 50 L 74 70 L 58 74" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+            <!-- Cabeça e Fones no Pescoço -->
+            <rect x="46" y="40" width="8" height="8" fill="#FED7AA" stroke="#000" stroke-width="2"/>
+            <circle cx="50" cy="28" r="14" fill="#FED7AA" stroke="#000" stroke-width="2.5"/>
+            <path d="M 36 40 C 36 48 64 48 64 40" stroke="#00A8FF" stroke-width="4" fill="none"/>
+            <rect x="34" y="36" width="6" height="10" rx="2" fill="#0F172A" stroke="#000" stroke-width="1.5"/>
+            <rect x="60" y="36" width="6" height="10" rx="2" fill="#0F172A" stroke="#000" stroke-width="1.5"/>
+            <!-- Cabelo Estiloso Castanho -->
+            <path d="M 36 24 C 34 14 46 8 56 10 C 66 12 64 22 64 24 C 60 18 52 20 48 18 C 42 16 38 20 36 24 Z" fill="#451A03" stroke="#000" stroke-width="2"/>
+            <circle cx="44" cy="28" r="2.2" fill="#0F172A"/>
+            <circle cx="56" cy="28" r="2.2" fill="#0F172A"/>
+            <path d="M 47 34 Q 52 38 56 34" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>`
+        },
+        {
+          id: 'doctor',
+          name: 'Médica / Enfermeira',
+          tags: 'medica doutora saude hospital enfermeira',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Jaleco Branco -->
+            <path d="M 34 46 L 66 46 L 68 100 L 32 100 Z" fill="#FFFFFF" stroke="#000" stroke-width="2.5"/>
+            <polygon points="50,46 44,66 56,66" fill="#06B6D4" stroke="#000" stroke-width="1.5"/>
+            <rect x="56" y="74" width="8" height="10" fill="#F1F5F9" stroke="#000" stroke-width="1.5"/>
+            <rect x="36" y="74" width="8" height="10" fill="#F1F5F9" stroke="#000" stroke-width="1.5"/>
+            <polygon points="40,54 40,52 38,52 38,50 40,50 40,48 42,48 42,50 44,50 44,52 42,52 42,54" fill="#EF4444"/>
+            <!-- Calça e Sapatos -->
+            <rect x="38" y="100" width="24" height="15" fill="#FFFFFF" stroke="#000" stroke-width="2"/>
+            <ellipse cx="42" cy="118" rx="7" ry="4" fill="#06B6D4" stroke="#000" stroke-width="2"/>
+            <ellipse cx="58" cy="118" rx="7" ry="4" fill="#06B6D4" stroke="#000" stroke-width="2"/>
+            <!-- Estetoscópio -->
+            <path d="M 42 46 C 42 62 58 62 58 46" stroke="#475569" stroke-width="2" fill="none"/>
+            <circle cx="50" cy="62" r="3" fill="#94A3B8" stroke="#000" stroke-width="1.5"/>
+            <!-- Braço com Prancheta -->
+            <path d="M 34 48 L 24 70 L 32 74 L 38 56 Z" fill="#FFFFFF" stroke="#000" stroke-width="2"/>
+            <rect x="18" y="68" width="14" height="18" rx="1.5" fill="#D97706" stroke="#000" stroke-width="1.8"/>
+            <rect x="20" y="71" width="10" height="12" fill="#FFFFFF"/>
+            <circle cx="28" cy="74" r="4" fill="#FED7AA" stroke="#000" stroke-width="1.5"/>
+            <!-- Braço Esquerdo -->
+            <path d="M 66 48 L 76 68 L 70 72 L 62 56 Z" fill="#FFFFFF" stroke="#000" stroke-width="2"/>
+            <circle cx="74" cy="70" r="4.5" fill="#FED7AA" stroke="#000" stroke-width="1.5"/>
+            <!-- Cabeça e Rosto -->
+            <rect x="46" y="40" width="8" height="8" fill="#FED7AA" stroke="#000" stroke-width="2"/>
+            <circle cx="50" cy="28" r="14" fill="#FED7AA" stroke="#000" stroke-width="2.5"/>
+            <path d="M 36 24 C 36 12 64 12 64 24 C 58 18 52 18 46 18 C 40 18 38 20 36 24 Z" fill="#451A03" stroke="#000" stroke-width="2"/>
+            <circle cx="44" cy="27" r="2.2" fill="#0F172A"/>
+            <circle cx="56" cy="27" r="2.2" fill="#0F172A"/>
+            <path d="M 46 34 Q 50 38 54 34" stroke="#E11D48" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>`
+        },
+        {
+          id: 'superhero',
+          name: 'Super-Herói',
+          tags: 'heroi capa voar',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Capa esvoaçante -->
+            <path d="M 30 45 C 5 60 5 110 15 125 C 30 115 45 95 40 50 Z" fill="#FF2E4C" stroke="#000" stroke-width="2.5" stroke-linejoin="round"/>
+            <!-- Corpo e Traje Azul -->
+            <path d="M 35 45 L 65 45 L 60 85 L 40 85 Z" fill="#00A8FF" stroke="#000" stroke-width="2.5"/>
+            <!-- Emblema no Peito -->
+            <polygon points="50,52 58,58 55,70 45,70 42,58" fill="#FFE600" stroke="#000" stroke-width="1.5"/>
+            <!-- Cinto Amarelo -->
+            <rect x="38" y="82" width="24" height="6" fill="#FFE600" stroke="#000" stroke-width="2"/>
+            <!-- Pernas -->
+            <rect x="40" y="88" width="8" height="28" fill="#00A8FF" stroke="#000" stroke-width="2"/>
+            <rect x="52" y="88" width="8" height="28" fill="#00A8FF" stroke="#000" stroke-width="2"/>
+            <!-- Botas Vermelhas -->
+            <path d="M 39 110 L 48 110 L 48 126 L 36 126 Z" fill="#FF2E4C" stroke="#000" stroke-width="2"/>
+            <path d="M 52 110 L 61 110 L 64 126 L 52 126 Z" fill="#FF2E4C" stroke="#000" stroke-width="2"/>
+            <!-- Braços com Punho Firme -->
+            <path d="M 35 48 L 22 70 L 28 75 L 38 56 Z" fill="#00A8FF" stroke="#000" stroke-width="2"/>
+            <circle cx="23" cy="74" r="6" fill="#FFE600" stroke="#000" stroke-width="2"/>
+            <path d="M 65 48 L 78 70 L 72 75 L 62 56 Z" fill="#00A8FF" stroke="#000" stroke-width="2"/>
+            <circle cx="77" cy="74" r="6" fill="#FFE600" stroke="#000" stroke-width="2"/>
+            <!-- Cabeça e Máscara -->
+            <circle cx="50" cy="30" r="15" fill="#FED7AA" stroke="#000" stroke-width="2.5"/>
+            <!-- Cabelo Preto Heroico -->
+            <path d="M 36 28 C 36 15 48 12 55 14 C 62 14 65 20 65 26 C 60 22 52 22 48 24 C 42 22 38 25 36 28 Z" fill="#0F172A" stroke="#000" stroke-width="1.5"/>
+            <!-- Máscara de Herói -->
+            <path d="M 38 28 Q 50 35 62 28 Q 60 34 50 33 Q 40 34 38 28 Z" fill="#0F172A"/>
+            <!-- Olhos Brancos -->
+            <polygon points="42,28 47,29 45,31" fill="#FFFFFF"/>
+            <polygon points="58,28 53,29 55,31" fill="#FFFFFF"/>
+            <!-- Sorriso Confiante -->
+            <path d="M 46 38 Q 50 42 55 38" stroke="#000" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          </svg>`
+        },
+        {
+          id: 'robot',
+          name: 'Robô Companheiro',
+          tags: 'robo sci-fi maquina',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Antena -->
+            <line x1="50" y1="12" x2="50" y2="25" stroke="#000" stroke-width="3"/>
+            <circle cx="50" cy="10" r="5" fill="#FF2E4C" stroke="#000" stroke-width="2"/>
+            <!-- Cabeça Quadrada -->
+            <rect x="32" y="24" width="36" height="30" rx="6" fill="#94A3B8" stroke="#000" stroke-width="3"/>
+            <!-- Visor / Olhos Digitais -->
+            <rect x="38" y="32" width="24" height="12" rx="3" fill="#0F172A" stroke="#000" stroke-width="1.5"/>
+            <circle cx="44" cy="38" r="3" fill="#38BDF8"/>
+            <circle cx="56" cy="38" r="3" fill="#38BDF8"/>
+            <!-- Boca Alto-Falante -->
+            <line x1="42" y1="48" x2="58" y2="48" stroke="#000" stroke-width="2" stroke-dasharray="3 2"/>
+            <!-- Pescoço Articulado -->
+            <rect x="44" y="54" width="12" height="6" fill="#64748B" stroke="#000" stroke-width="2"/>
+            <!-- Tronco -->
+            <rect x="28" y="60" width="44" height="38" rx="5" fill="#CBD5E1" stroke="#000" stroke-width="3"/>
+            <!-- Painel e Medidores -->
+            <circle cx="40" cy="74" r="6" fill="#FFE600" stroke="#000" stroke-width="1.5"/>
+            <line x1="40" y1="74" x2="43" y2="71" stroke="#000" stroke-width="2"/>
+            <rect x="52" y="70" width="14" height="6" fill="#22C55E" stroke="#000" stroke-width="1.5"/>
+            <rect x="52" y="78" width="14" height="6" fill="#EF4444" stroke="#000" stroke-width="1.5"/>
+            <!-- Braços de Mola com Pinças -->
+            <path d="M 28 68 Q 15 72 18 85 L 12 90" fill="none" stroke="#000" stroke-width="3"/>
+            <path d="M 10 88 C 5 95 20 95 16 88" fill="none" stroke="#000" stroke-width="2.5"/>
+            <path d="M 72 68 Q 85 72 82 85 L 88 90" fill="none" stroke="#000" stroke-width="3"/>
+            <path d="M 90 88 C 95 95 80 95 84 88" fill="none" stroke="#000" stroke-width="2.5"/>
+            <!-- Pernas com Rodinhas -->
+            <rect x="36" y="98" width="8" height="15" fill="#64748B" stroke="#000" stroke-width="2"/>
+            <rect x="56" y="98" width="8" height="15" fill="#64748B" stroke="#000" stroke-width="2"/>
+            <ellipse cx="40" cy="118" rx="8" ry="5" fill="#0F172A" stroke="#000" stroke-width="2"/>
+            <ellipse cx="60" cy="118" rx="8" ry="5" fill="#0F172A" stroke="#000" stroke-width="2"/>
+          </svg>`
+        },
+        {
+          id: 'villain',
+          name: 'Vilão com Cartola',
+          tags: 'vilao malvado suspeito',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Sobretudo Roxo -->
+            <path d="M 32 50 L 20 115 L 80 115 L 68 50 Z" fill="#4C1D95" stroke="#000" stroke-width="3"/>
+            <!-- Gravata Borboleta Vermelha -->
+            <polygon points="50,55 42,50 42,60" fill="#FF2E4C" stroke="#000" stroke-width="1.5"/>
+            <polygon points="50,55 58,50 58,60" fill="#FF2E4C" stroke="#000" stroke-width="1.5"/>
+            <circle cx="50" cy="55" r="2.5" fill="#FFE600" stroke="#000" stroke-width="1"/>
+            <!-- Cabeça e Nariz Fino -->
+            <polygon points="50,25 64,48 36,48" fill="#FDE047" stroke="#000" stroke-width="2"/>
+            <!-- Bigode Encaracolado Maléfico -->
+            <path d="M 50 44 Q 40 40 32 44 Q 30 46 34 47 Q 44 44 50 45 Q 56 44 66 47 Q 70 46 68 44 Q 60 40 50 44 Z" fill="#0F172A"/>
+            <!-- Monóculo Dourado -->
+            <circle cx="43" cy="35" r="5" fill="#E0F2FE" stroke="#F59E0B" stroke-width="2"/>
+            <line x1="43" y1="40" x2="48" y2="52" stroke="#F59E0B" stroke-width="1.5"/>
+            <!-- Olho Malvado -->
+            <line x1="53" y1="33" x2="61" y2="37" stroke="#000" stroke-width="2.5"/>
+            <circle cx="57" cy="37" r="2" fill="#000"/>
+            <!-- Cartola Alta Elegante -->
+            <ellipse cx="50" cy="24" rx="22" ry="4" fill="#0F172A" stroke="#000" stroke-width="2"/>
+            <path d="M 36 24 L 38 2 L 62 2 L 64 24 Z" fill="#0F172A" stroke="#000" stroke-width="2"/>
+            <rect x="37" y="16" width="26" height="5" fill="#DC2626"/>
+            <!-- Sapatos Elegantes -->
+            <ellipse cx="32" cy="118" rx="9" ry="4" fill="#000"/>
+            <ellipse cx="68" cy="118" rx="9" ry="4" fill="#000"/>
+          </svg>`
+        },
+        {
+          id: 'heroine',
+          name: 'Heroína Espacial',
+          tags: 'heroina garota cibernetica',
+          svg: `<svg viewBox="0 0 100 130" class="w-full h-full">
+            <!-- Cabelo Rosa Estilizado -->
+            <path d="M 30 35 C 20 20 40 5 60 8 C 75 10 82 25 78 45 C 72 40 68 35 60 35 C 50 25 35 30 30 35 Z" fill="#EC4899" stroke="#000" stroke-width="2"/>
+            <!-- Rabo de Cavalo Animado -->
+            <path d="M 72 20 Q 90 22 92 40 Q 82 42 75 30 Z" fill="#EC4899" stroke="#000" stroke-width="2"/>
+            <!-- Rosto -->
+            <circle cx="50" cy="35" r="15" fill="#FFEDD5" stroke="#000" stroke-width="2.5"/>
+            <!-- Olhos Grandes de Anime/Comic -->
+            <ellipse cx="44" cy="34" rx="3.5" ry="5" fill="#0F172A"/>
+            <circle cx="45" cy="32" r="1.5" fill="#FFFFFF"/>
+            <ellipse cx="56" cy="34" rx="3.5" ry="5" fill="#0F172A"/>
+            <circle cx="57" cy="32" r="1.5" fill="#FFFFFF"/>
+            <path d="M 48 42 Q 50 45 53 42" stroke="#FF2E4C" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- Traje Futurista -->
+            <path d="M 36 50 L 64 50 L 58 85 L 42 85 Z" fill="#8B5CF6" stroke="#000" stroke-width="2.5"/>
+            <polygon points="50,55 58,68 42,68" fill="#FDE047" stroke="#000" stroke-width="1.5"/>
+            <!-- Braços com Manoplas -->
+            <path d="M 36 52 L 24 72 L 30 76 L 39 58 Z" fill="#8B5CF6" stroke="#000" stroke-width="2"/>
+            <rect x="20" y="68" width="10" height="12" rx="2" fill="#FFE600" stroke="#000" stroke-width="2"/>
+            <path d="M 64 52 L 76 72 L 70 76 L 61 58 Z" fill="#8B5CF6" stroke="#000" stroke-width="2"/>
+            <rect x="70" y="68" width="10" height="12" rx="2" fill="#FFE600" stroke="#000" stroke-width="2"/>
+            <!-- Pernas e Botas Altas -->
+            <rect x="42" y="85" width="6" height="36" fill="#DDD6FE" stroke="#000" stroke-width="2"/>
+            <rect x="52" y="85" width="6" height="36" fill="#DDD6FE" stroke="#000" stroke-width="2"/>
+            <path d="M 40 102 L 49 102 L 49 124 L 38 124 Z" fill="#FFE600" stroke="#000" stroke-width="2"/>
+            <path d="M 51 102 L 60 102 L 62 124 L 51 124 Z" fill="#FFE600" stroke="#000" stroke-width="2"/>
+          </svg>`
+        },
+        {
+          id: 'doge_hero',
+          name: 'Super-Cachorro',
+          tags: 'animal pet cachorro capa',
+          svg: `<svg viewBox="0 0 100 110" class="w-full h-full">
+            <!-- Capa do pet -->
+            <path d="M 45 40 Q 15 50 10 80 Q 30 75 45 55 Z" fill="#FF2E4C" stroke="#000" stroke-width="2.5"/>
+            <!-- Corpo do cachorro -->
+            <ellipse cx="55" cy="65" rx="22" ry="16" fill="#F59E0B" stroke="#000" stroke-width="2.5"/>
+            <!-- Patas -->
+            <rect x="42" y="74" width="7" height="24" rx="3" fill="#F59E0B" stroke="#000" stroke-width="2"/>
+            <rect x="63" y="74" width="7" height="24" rx="3" fill="#F59E0B" stroke="#000" stroke-width="2"/>
+            <!-- Rabo abanando alegre -->
+            <path d="M 75 60 Q 88 50 92 38" stroke="#F59E0B" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M 75 60 Q 88 50 92 38" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- Cabeça e Focinho -->
+            <circle cx="40" cy="40" r="16" fill="#F59E0B" stroke="#000" stroke-width="2.5"/>
+            <!-- Orelhas caídas fofas -->
+            <ellipse cx="26" cy="38" rx="6" ry="12" fill="#D97706" stroke="#000" stroke-width="2" transform="rotate(-15 26 38)"/>
+            <!-- Focinho e Nariz -->
+            <ellipse cx="44" cy="44" rx="8" ry="6" fill="#FDE68A" stroke="#000" stroke-width="1.5"/>
+            <ellipse cx="46" cy="41" rx="3" ry="2" fill="#000"/>
+            <circle cx="36" cy="34" r="2.5" fill="#000"/>
+            <!-- Máscara de Herói no Pet -->
+            <path d="M 30 32 Q 40 37 46 32" stroke="#00A8FF" stroke-width="3" fill="none"/>
+          </svg>`
+        },
+        {
+          id: 'alien',
+          name: 'Alien Curioso',
+          tags: 'extraterrestre alien monstro',
+          svg: `<svg viewBox="0 0 100 120" class="w-full h-full">
+            <!-- Três Olhos em Antenas -->
+            <line x1="38" y1="20" x2="44" y2="40" stroke="#000" stroke-width="2.5"/>
+            <circle cx="37" cy="18" r="6" fill="#FFFFFF" stroke="#000" stroke-width="2"/>
+            <circle cx="37" cy="18" r="2.5" fill="#84CC16"/>
+
+            <line x1="50" y1="12" x2="50" y2="38" stroke="#000" stroke-width="2.5"/>
+            <circle cx="50" cy="12" r="7" fill="#FFFFFF" stroke="#000" stroke-width="2"/>
+            <circle cx="50" cy="12" r="3" fill="#84CC16"/>
+
+            <line x1="62" y1="20" x2="56" y2="40" stroke="#000" stroke-width="2.5"/>
+            <circle cx="63" cy="18" r="6" fill="#FFFFFF" stroke="#000" stroke-width="2"/>
+            <circle cx="63" cy="18" r="2.5" fill="#84CC16"/>
+
+            <!-- Corpo Verde Gelatina -->
+            <path d="M 30 60 C 25 35 75 35 70 60 C 78 85 80 105 50 105 C 20 105 22 85 30 60 Z" fill="#4ADE80" stroke="#000" stroke-width="3"/>
+            <!-- Boca Aberta Divertida -->
+            <ellipse cx="50" cy="62" rx="10" ry="7" fill="#0F172A"/>
+            <path d="M 45 66 Q 50 69 55 66" fill="#F43F5E"/>
+            <polygon points="46,55 50,59 54,55" fill="#FFF"/>
+            <!-- Manchas no corpo -->
+            <circle cx="38" cy="80" r="3" fill="#22C55E"/>
+            <circle cx="60" cy="85" r="4" fill="#22C55E"/>
+            <!-- Pés fofos -->
+            <ellipse cx="38" cy="106" rx="8" ry="5" fill="#22C55E" stroke="#000" stroke-width="2"/>
+            <ellipse cx="62" cy="106" rx="8" ry="5" fill="#22C55E" stroke="#000" stroke-width="2"/>
+          </svg>`
+        }
+      ],
+      scenery: [
+        {
+          id: 'skyscrapers',
+          name: 'Prédios Urbanos',
+          tags: 'cidade arranha-ceu urbano edificio',
+          svg: `<svg viewBox="0 0 160 140" class="w-full h-full">
+            <!-- Prédio de fundo -->
+            <rect x="75" y="10" width="50" height="120" fill="#64748B" stroke="#000" stroke-width="3"/>
+            <!-- Janelas do fundo -->
+            <g fill="#FEF08A">
+              <rect x="83" y="20" width="8" height="12"/>
+              <rect x="105" y="20" width="8" height="12"/>
+              <rect x="83" y="42" width="8" height="12"/>
+              <rect x="105" y="42" width="8" height="12"/>
+              <rect x="83" y="64" width="8" height="12"/>
+              <rect x="105" y="64" width="8" height="12"/>
+            </g>
+            <!-- Antena no topo -->
+            <line x1="100" y1="0" x2="100" y2="10" stroke="#000" stroke-width="3"/>
+            <circle cx="100" cy="0" r="3" fill="#FF2E4C"/>
+            <!-- Prédio da frente (estilo clássico com tijolos/janelas) -->
+            <rect x="15" y="35" width="65" height="95" fill="#0EA5E9" stroke="#000" stroke-width="3"/>
+            <g fill="#FFFFFF">
+              <rect x="25" y="45" width="10" height="12" stroke="#000" stroke-width="1.5"/>
+              <rect x="42" y="45" width="10" height="12" stroke="#000" stroke-width="1.5"/>
+              <rect x="60" y="45" width="10" height="12" stroke="#000" stroke-width="1.5"/>
+              <rect x="25" y="65" width="10" height="12" stroke="#000" stroke-width="1.5"/>
+              <rect x="42" y="65" width="10" height="12" stroke="#000" stroke-width="1.5"/>
+              <rect x="60" y="65" width="10" height="12" stroke="#000" stroke-width="1.5"/>
+              <rect x="25" y="85" width="10" height="12" stroke="#000" stroke-width="1.5"/>
+              <rect x="42" y="85" width="10" height="12" stroke="#000" stroke-width="1.5"/>
+              <rect x="60" y="85" width="10" height="12" stroke="#000" stroke-width="1.5"/>
+            </g>
+            <!-- Prédio baixo comercial -->
+            <rect x="120" y="55" width="35" height="75" fill="#CBD5E1" stroke="#000" stroke-width="3"/>
+            <rect x="128" y="68" width="18" height="12" fill="#38BDF8" stroke="#000" stroke-width="1.5"/>
+            <rect x="128" y="88" width="18" height="12" fill="#38BDF8" stroke="#000" stroke-width="1.5"/>
+          </svg>`
+        },
+        {
+          id: 'mountains',
+          name: 'Montanhas com Neve',
+          tags: 'montanha natureza rocha pico',
+          svg: `<svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- Montanha Traseira -->
+            <polygon points="90,15 155,100 25,100" fill="#94A3B8" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+            <polygon points="90,15 105,42 96,38 88,48 76,40" fill="#FFFFFF" stroke="#000" stroke-width="2"/>
+            <!-- Montanha Principal Dianteira -->
+            <polygon points="55,30 115,100 -5,100" fill="#64748B" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+            <!-- Pico Nevado -->
+            <polygon points="55,30 72,55 64,50 56,60 44,52 38,58" fill="#FFFFFF" stroke="#000" stroke-width="2"/>
+            <!-- Montanha Menor Direita -->
+            <polygon points="125,50 165,100 85,100" fill="#475569" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+            <polygon points="125,50 136,65 128,62 122,68 116,62" fill="#FFFFFF" stroke="#000" stroke-width="1.5"/>
+          </svg>`
+        },
+        {
+          id: 'tree_oak',
+          name: 'Árvore Frondosa',
+          tags: 'arvore planta floresta natureza',
+          svg: `<svg viewBox="0 0 120 140" class="w-full h-full">
+            <!-- Tronco Robusto -->
+            <path d="M 52 70 L 48 135 L 72 135 L 68 70 Z" fill="#78350F" stroke="#000" stroke-width="3"/>
+            <!-- Raízes visíveis -->
+            <path d="M 48 130 L 35 138 M 72 130 L 85 138" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+            <!-- Galhos -->
+            <path d="M 54 85 Q 40 70 32 75 M 66 80 Q 80 68 88 74" stroke="#78350F" stroke-width="4" stroke-linecap="round"/>
+            <!-- Copa Verde Estilo Cartoon -->
+            <path d="M 30 75 C 10 70 10 40 30 35 C 20 10 50 5 60 20 C 75 5 105 10 100 35 C 115 40 115 70 95 75 C 100 95 70 95 60 85 C 50 95 20 95 30 75 Z" fill="#22C55E" stroke="#000" stroke-width="3.5" stroke-linejoin="round"/>
+            <!-- Destaques na Folhagem -->
+            <circle cx="45" cy="40" r="10" fill="#4ADE80"/>
+            <circle cx="75" cy="45" r="12" fill="#16A34A"/>
+          </svg>`
+        },
+        {
+          id: 'pine_tree',
+          name: 'Pinheiro de Floresta',
+          tags: 'pinheiro arvore natal mata',
+          svg: `<svg viewBox="0 0 100 140" class="w-full h-full">
+            <!-- Tronco -->
+            <rect x="44" y="110" width="12" height="25" fill="#78350F" stroke="#000" stroke-width="3"/>
+            <!-- Três Camadas de Folhas -->
+            <polygon points="50,20 85,60 15,60" fill="#15803D" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+            <polygon points="50,45 92,88 8,88" fill="#16A34A" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+            <polygon points="50,70 98,115 2,115" fill="#15803D" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+          </svg>`
+        },
+        {
+          id: 'street_lamp',
+          name: 'Poste de Luz Urbano',
+          tags: 'poste luz noite calcada rua',
+          svg: `<svg viewBox="0 0 80 140" class="w-full h-full">
+            <!-- Base do Poste -->
+            <rect x="34" y="125" width="12" height="12" fill="#1E293B" stroke="#000" stroke-width="2.5"/>
+            <!-- Haste Longa -->
+            <rect x="37" y="35" width="6" height="92" fill="#334155" stroke="#000" stroke-width="2"/>
+            <!-- Braço Curvo do Lampião -->
+            <path d="M 40 38 C 40 15 65 15 65 30" fill="none" stroke="#000" stroke-width="3.5"/>
+            <!-- Cúpula de Luz -->
+            <path d="M 55 30 L 75 30 L 70 42 L 60 42 Z" fill="#0F172A" stroke="#000" stroke-width="2"/>
+            <!-- Lâmpada Acesa Amarela -->
+            <ellipse cx="65" cy="43" rx="5" ry="3" fill="#FACC15"/>
+            <!-- Brilho / Cones de Luz -->
+            <polygon points="65,46 45,95 85,95" fill="#FEF08A" opacity="0.35"/>
+          </svg>`
+        },
+        {
+          id: 'sun_cloud',
+          name: 'Sol & Nuvens',
+          tags: 'sol nuvem ceu dia clima',
+          svg: `<svg viewBox="0 0 140 100" class="w-full h-full">
+            <!-- Sol Radiante Amarelo -->
+            <circle cx="85" cy="40" r="26" fill="#FBBF24" stroke="#000" stroke-width="3"/>
+            <!-- Raios do Sol -->
+            <path d="M 85 8 L 85 2 M 85 72 L 85 78 M 53 40 L 47 40 M 117 40 L 123 40 M 62 17 L 58 13 M 108 63 L 112 67 M 62 63 L 58 67 M 108 17 L 112 13" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+            <!-- Nuvem Fofa à Frente -->
+            <path d="M 25 70 C 15 70 10 58 20 50 C 15 35 35 28 45 35 C 55 25 75 28 80 40 C 90 40 95 50 90 60 C 95 70 85 70 80 70 Z" fill="#FFFFFF" stroke="#000" stroke-width="3"/>
+          </svg>`
+        }
+      ],
+      effects: [
+        {
+          id: 'pow_boom',
+          name: 'POW! Explosão',
+          tags: 'pow soco luta golpe',
+          svg: `<svg viewBox="0 0 140 100" class="w-full h-full">
+            <polygon points="70,5 88,28 120,15 110,42 138,55 112,70 125,95 92,85 75,100 58,82 25,95 38,70 5,55 35,42 22,15 52,28" fill="#FFE600" stroke="#000" stroke-width="3.5" stroke-linejoin="round"/>
+            <polygon points="70,14 84,32 108,22 100,44 122,54 102,66 112,86 86,78 74,90 60,76 34,86 44,66 18,54 42,44 32,22 56,32" fill="#FF2E4C" stroke="#000" stroke-width="2"/>
+            <text x="70" y="62" font-family="'Bangers', impact" font-size="36" text-anchor="middle" fill="#FFFFFF" stroke="#000000" stroke-width="1.5" letter-spacing="2">POW!</text>
+          </svg>`
+        },
+        {
+          id: 'boom_fx',
+          name: 'BOOM! Dinamite',
+          tags: 'boom explosao bomba',
+          svg: `<svg viewBox="0 0 140 100" class="w-full h-full">
+            <polygon points="70,2 85,25 118,8 108,38 135,50 106,66 130,92 95,84 75,98 55,84 20,95 40,66 8,50 35,38 25,10 56,25" fill="#FF2E4C" stroke="#000" stroke-width="3.5" stroke-linejoin="round"/>
+            <polygon points="70,12 82,30 106,16 98,40 118,50 96,62 114,82 86,76 72,86 58,76 32,84 46,62 26,50 46,40 38,18 60,30" fill="#FFE600"/>
+            <text x="70" y="62" font-family="'Bangers', impact" font-size="34" text-anchor="middle" fill="#000000" letter-spacing="1">BOOM!</text>
+          </svg>`
+        },
+        {
+          id: 'crash_fx',
+          name: 'CRASH! Batida',
+          tags: 'crash quebra som',
+          svg: `<svg viewBox="0 0 140 100" class="w-full h-full">
+            <polygon points="70,5 92,26 126,18 112,46 136,65 106,75 116,98 84,86 65,98 48,82 15,90 28,68 6,48 36,42 22,18 56,26" fill="#00A8FF" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+            <text x="70" y="60" font-family="'Bangers', impact" font-size="30" text-anchor="middle" fill="#FFE600" stroke="#000" stroke-width="1.5">CRASH!</text>
+          </svg>`
+        },
+        {
+          id: 'action_lines',
+          name: 'Linhas de Velocidade',
+          tags: 'linhas velocidade foco acao',
+          svg: `<svg viewBox="0 0 140 100" class="w-full h-full">
+            <!-- Linhas dinâmicas centradas para foco -->
+            <path d="M 10 10 L 45 35 M 70 5 L 70 30 M 130 10 L 95 35 M 5 50 L 35 50 M 135 50 L 105 50 M 10 90 L 45 65 M 70 95 L 70 70 M 130 90 L 95 65" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+          </svg>`
+        }
+      ]
+    };
+
+    /* Injeção dos Cards das Coleções nas Abas */
+    function populateCatalog() {
+      // 1. Personagens
+      const charContainer = document.getElementById('characters-catalog');
+      charContainer.innerHTML = ASSETS.characters.map(item => `
+        <button onclick="addGraphicAsset('characters', '${item.id}')" class="group p-2 bg-white rounded-lg border-2 border-black hover:bg-amber-50 hover:shadow-comic-sm transition text-center flex flex-col items-center justify-between h-36">
+          <div class="w-20 h-24 flex items-center justify-center group-hover:scale-105 transition pointer-events-none">
+            ${item.svg}
+          </div>
+          <span class="text-[11px] font-bold text-slate-800 leading-tight">${item.name}</span>
+        </button>
+      `).join('');
+
+      // 2. Cenários
+      const sceneryContainer = document.getElementById('scenery-catalog');
+      sceneryContainer.innerHTML = ASSETS.scenery.map(item => `
+        <button onclick="addGraphicAsset('scenery', '${item.id}')" class="group p-2 bg-white rounded-lg border-2 border-black hover:bg-emerald-50 hover:shadow-comic-sm transition text-center flex flex-col items-center justify-between h-36">
+          <div class="w-24 h-24 flex items-center justify-center group-hover:scale-105 transition pointer-events-none">
+            ${item.svg}
+          </div>
+          <span class="text-[11px] font-bold text-slate-800 leading-tight">${item.name}</span>
+        </button>
+      `).join('');
+
+      // 3. Efeitos
+      const effectsContainer = document.getElementById('effects-catalog');
+      effectsContainer.innerHTML = ASSETS.effects.map(item => `
+        <button onclick="addGraphicAsset('effects', '${item.id}')" class="group p-2 bg-white rounded-lg border-2 border-black hover:bg-rose-50 hover:shadow-comic-sm transition text-center flex flex-col items-center justify-between h-36">
+          <div class="w-24 h-24 flex items-center justify-center group-hover:scale-105 transition pointer-events-none">
+            ${item.svg}
+          </div>
+          <span class="text-[11px] font-bold text-slate-800 leading-tight">${item.name}</span>
+        </button>
+      `).join('');
+    }
+
+    /* Alternância de Abas na Sidebar */
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-comicYellow', 'border-black', 'shadow-comic-sm');
+        btn.classList.add('bg-white', 'border-transparent');
+      });
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      const activePane = document.getElementById(`tab-content-${tabId}`);
+      if (activeBtn && activePane) {
+        activeBtn.classList.remove('bg-white', 'border-transparent');
+        activeBtn.classList.add('bg-comicYellow', 'border-black', 'shadow-comic-sm');
+        activePane.classList.remove('hidden');
+      }
+    }
+
+    /* GESTÃO DOS QUADROS (LAYOUTS DA HQ & MODO PASSO A PASSO) */
+    function setLayout(layoutType) {
+      state.currentLayout = layoutType;
+      
+      // Atualiza visual dos botões de layout
+      ['step', 'single', 'strip3', 'grid4'].forEach(type => {
+        const btn = document.getElementById(`btn-layout-${type}`);
+        if (btn) {
+          if (type === layoutType) {
+            btn.className = "px-2.5 py-1 text-xs font-bold rounded border-2 border-black bg-comicYellow shadow-comic-sm transition flex items-center gap-1";
+          } else {
+            btn.className = "px-2.5 py-1 text-xs font-bold rounded border border-transparent hover:border-black hover:bg-white transition flex items-center gap-1";
+          }
+        }
+      });
+
+      const container = document.getElementById('panels-container');
+      const wrapper = document.getElementById('comic-stage-wrapper');
+      container.innerHTML = '';
+      state.panels = [];
+      deselectElement();
+
+      let panelConfigs = [];
+      let heightClass = "w-full aspect-square comic-panel-square";
+
+      if (layoutType === 'step') {
+        // Modo Passo a Passo: Cria 1 por vez com limite de 2 quadros quadrados
+        wrapper.className = "bg-white p-5 md:p-8 rounded-xl border-4 border-black shadow-comic-lg w-full max-w-[1080px]";
+        container.className = "grid grid-cols-1 md:grid-cols-2 gap-6";
+        panelConfigs = [{ id: 0, title: 'Quadro 1 (Início)' }];
+        heightClass = "w-full aspect-square comic-panel-square";
+      } else if (layoutType === 'single') {
+        // Quadro Único Gigante (Pôster / Capa)
+        wrapper.className = "bg-white p-5 md:p-8 rounded-xl border-4 border-black shadow-comic-lg w-full max-w-[780px]";
+        container.className = "grid grid-cols-1";
+        panelConfigs = [{ id: 0, title: 'Quadro 1' }];
+        heightClass = "w-full aspect-square comic-panel-square";
+      } else if (layoutType === 'strip3') {
+        // Tira Tradicional de 3 Quadros Quadrados
+        wrapper.className = "bg-white p-5 md:p-8 rounded-xl border-4 border-black shadow-comic-lg w-full max-w-[1380px]";
+        container.className = "grid grid-cols-1 md:grid-cols-3 gap-5";
+        panelConfigs = [
+          { id: 0, title: 'Quadro 1 (Início)' },
+          { id: 1, title: 'Quadro 2 (Clímax)' },
+          { id: 2, title: 'Quadro 3 (Desfecho)' }
+        ];
+        heightClass = "w-full aspect-square comic-panel-square";
+      } else if (layoutType === 'grid4') {
+        // Página 2x2 Grande
+        wrapper.className = "bg-white p-5 md:p-8 rounded-xl border-4 border-black shadow-comic-lg w-full max-w-[1080px]";
+        container.className = "grid grid-cols-1 sm:grid-cols-2 gap-5";
+        panelConfigs = [
+          { id: 0, title: 'Quadro 1' },
+          { id: 1, title: 'Quadro 2' },
+          { id: 2, title: 'Quadro 3' },
+          { id: 3, title: 'Quadro 4' }
+        ];
+        heightClass = "w-full aspect-square comic-panel-square";
+      }
+
+      panelConfigs.forEach((cfg, idx) => {
+        createPanelElement(idx, cfg.title, container, heightClass);
+      });
+
+      // No modo passo a passo, inclui o card interativo de adicionar próximo quadro (se < 2)
+      if (layoutType === 'step') {
+        renderAddPanelCard(container);
+      } else {
+        updateQuickAddBtnState(true);
+      }
+
+      updatePanelBadges();
+      selectPanel(0);
+    }
+
+    /* RENDERIZAÇÃO DO CARD "+ CRIAR PRÓXIMO QUADRO" */
+    function renderAddPanelCard(container) {
+      const existing = document.getElementById('add-panel-card');
+      if (existing) existing.remove();
+
+      // No modo 1 por vez, o limite é de 2 quadros quadrados
+      if (state.currentLayout === 'step' && state.panels.length >= 2) {
+        updateQuickAddBtnState(false);
+        return;
+      }
+
+      const addCard = document.createElement('div');
+      addCard.id = 'add-panel-card';
+      addCard.className = "border-4 border-dashed border-slate-300 hover:border-black bg-slate-50/70 hover:bg-amber-50/80 rounded-xl flex flex-col items-center justify-center p-6 cursor-pointer transition-all duration-200 group w-full aspect-square comic-panel-square select-none";
+      addCard.onclick = () => addNewPanel();
+      addCard.innerHTML = `
+        <div class="w-16 h-16 rounded-full bg-white border-2 border-slate-300 group-hover:border-black group-hover:bg-comicYellow flex items-center justify-center text-3xl shadow-sm group-hover:shadow-comic transition-all transform group-hover:scale-110">
+          ➕
+        </div>
+        <span class="font-bangers text-2xl text-slate-500 group-hover:text-black tracking-wide mt-3">CRIAR PRÓXIMO QUADRO</span>
+        <span class="font-comic text-xs text-slate-400 group-hover:text-slate-700 mt-1 text-center max-w-[220px]" id="add-card-subtitle">
+          Adicione o Quadro #${state.panels.length + 1} de 2 para continuar sua história
+        </span>
+      `;
+      container.appendChild(addCard);
+      updateQuickAddBtnState(true);
+    }
+
+    function updateAddCardSubtitle() {
+      const container = document.getElementById('panels-container');
+      const addCard = document.getElementById('add-panel-card');
+
+      if (state.currentLayout === 'step') {
+        if (state.panels.length >= 2) {
+          if (addCard) addCard.remove();
+          updateQuickAddBtnState(false);
+          return;
+        }
+        if (!addCard && container && state.panels.length < 2) {
+          renderAddPanelCard(container);
+        } else if (addCard) {
+          const sub = document.getElementById('add-card-subtitle');
+          if (sub) {
+            sub.textContent = `Adicione o Quadro #${state.panels.length + 1} de 2 para continuar sua história`;
+          }
+        }
+        updateQuickAddBtnState(true);
+      } else {
+        if (addCard) addCard.remove();
+        updateQuickAddBtnState(true);
+      }
+    }
+
+    function updateQuickAddBtnState(canAdd) {
+      const stageBtn = document.getElementById('stage-add-panel-btn');
+      const stageBtnText = document.getElementById('stage-add-panel-text');
+      
+      if (state.currentLayout === 'step') {
+        if (stageBtnText) {
+          stageBtnText.textContent = canAdd ? '➕ Adicionar Próximo Quadro (2/2)' : '✓ Limite de 2 Quadros Atingido';
+        }
+        if (stageBtn) {
+          stageBtn.classList.toggle('opacity-60', !canAdd);
+        }
+      } else {
+        if (stageBtnText) {
+          stageBtnText.textContent = '➕ Adicionar Próximo Quadro';
+        }
+        if (stageBtn) {
+          stageBtn.classList.remove('opacity-60');
+        }
+      }
+    }
+
+    /* CRIAÇÃO DINÂMICA DE UM NOVO QUADRO (1 POR VEZ) */
+    function addNewPanel() {
+      const container = document.getElementById('panels-container');
+      const wrapper = document.getElementById('comic-stage-wrapper');
+
+      // Se não estiver no modo passo a passo, faz a transição para o modo 1 por vez
+      if (state.currentLayout !== 'step') {
+        setLayout('step');
+        showToast('Modo 1 por Vez ativado (limite: 2 quadros)', '✨');
+        return;
+      }
+
+      // Verificação de limite máximo de 2 quadros quadrados no modo 1 por vez
+      if (state.panels.length >= 2) {
+        showToast('O modo 1 por Vez permite no máximo 2 quadros!', '⚠️');
+        return;
+      }
+
+      const newIndex = state.panels.length;
+      const addCard = document.getElementById('add-panel-card');
+
+      const panel = createPanelElement(newIndex, `Quadro ${newIndex + 1}`, null, 'w-full aspect-square comic-panel-square');
+      
+      if (addCard && addCard.parentNode === container) {
+        container.insertBefore(panel, addCard);
+      } else {
+        container.appendChild(panel);
+      }
+
+      // Remove o card se atingiu os 2 quadros
+      if (state.panels.length >= 2) {
+        const card = document.getElementById('add-panel-card');
+        if (card) card.remove();
+      } else {
+        renderAddPanelCard(container);
+      }
+
+      updatePanelBadges();
+      updateAddCardSubtitle();
+      selectPanel(newIndex);
+
+      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showToast(`Quadro #${newIndex + 1} adicionado!`, '✨');
+    }
+
+    /* REMOVER UM QUADRO INDIVIDUAL */
+    function removePanel(index, event) {
+      if (event) event.stopPropagation();
+
+      if (state.panels.length <= 1) {
+        showToast('A HQ precisa ter pelo menos 1 quadro!', '⚠️');
+        return;
+      }
+
+      const panelData = state.panels[index];
+      if (!panelData) return;
+
+      // Remove elemento DOM
+      panelData.element.remove();
+      // Remove do array de estado
+      state.panels.splice(index, 1);
+
+      updatePanelBadges();
+      updateAddCardSubtitle();
+
+      // Ajusta quadro selecionado
+      if (state.activePanelIndex >= state.panels.length) {
+        selectPanel(state.panels.length - 1);
+      } else if (state.activePanelIndex === index) {
+        selectPanel(Math.max(0, index - 1));
+      } else {
+        selectPanel(state.activePanelIndex);
+      }
+
+      deselectElement();
+      showToast('Quadro removido!', '🗑️');
+    }
+
+    /* ATUALIZA IDENTIFICAÇÃO DE TODOS OS QUADROS */
+    function updatePanelBadges() {
+      state.panels.forEach((p, idx) => {
+        p.id = idx;
+        p.element.id = `panel-${idx}`;
+        p.element.setAttribute('data-panel-index', idx);
+
+        const badgeNum = p.element.querySelector('.panel-badge-num');
+        if (badgeNum) badgeNum.textContent = `#${idx + 1}`;
+
+        const emptyTitle = p.element.querySelector('.panel-empty-title');
+        if (emptyTitle) emptyTitle.textContent = `Quadro #${idx + 1} Vazio`;
+
+        const removeBtn = p.element.querySelector('.panel-remove-btn');
+        if (removeBtn) {
+          removeBtn.onclick = (e) => removePanel(idx, e);
+          removeBtn.style.display = state.panels.length > 1 ? 'flex' : 'none';
+        }
+      });
+
+      const lbl = document.getElementById('active-panel-label');
+      if (lbl && state.panels[state.activePanelIndex]) {
+        lbl.textContent = `Quadro Selecionado: #${state.activePanelIndex + 1} de ${state.panels.length}`;
+      }
+    }
+
+    /* CONTROLE VISUAL DO PLACEHOLDER DE QUADRO VAZIO */
+    function checkPanelPlaceholder(panel) {
+      if (!panel) return;
+      const placeholder = panel.querySelector('.panel-empty-placeholder');
+      if (!placeholder) return;
+      const hasItems = panel.querySelectorAll('[data-type]').length > 0;
+      placeholder.style.display = hasItems ? 'none' : 'flex';
+    }
+
+    /* MONTAGEM DO ELEMENTO DO QUADRO NO DOM */
+    function createPanelElement(index, title, parentContainer, heightClass = 'w-full aspect-square comic-panel-square') {
+      const panel = document.createElement('div');
+      panel.id = `panel-${index}`;
+      panel.className = `relative bg-white border-4 border-black ${heightClass} overflow-hidden rounded-xl shadow-sm select-none cursor-crosshair transition-all`;
+      panel.setAttribute('data-panel-index', index);
+
+      // Barra superior discreta do quadro
+      const headerBar = document.createElement('div');
+      headerBar.className = "panel-ui-control absolute top-2 left-2 right-2 flex items-center justify-between z-40 pointer-events-none";
+
+      // Badge com número do quadro
+      const badge = document.createElement('div');
+      badge.className = "bg-black text-white text-xs font-bangers px-2.5 py-1 rounded shadow-sm opacity-80 pointer-events-auto flex items-center gap-1";
+      badge.innerHTML = `<span class="panel-badge-num">#${index + 1}</span>`;
+
+      // Botão excluir quadro (mostra quando há mais de 1 quadro)
+      const actionsWrap = document.createElement('div');
+      actionsWrap.className = "flex items-center gap-1 pointer-events-auto";
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = "panel-remove-btn bg-white/95 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border-2 border-black text-[11px] font-bold px-2 py-0.5 rounded shadow-comic-sm transition active:translate-y-0.5 flex items-center gap-1";
+      removeBtn.title = "Excluir este quadro";
+      removeBtn.innerHTML = "<span>🗑️ Excluir</span>";
+      removeBtn.style.display = state.panels.length > 0 ? 'flex' : 'none';
+      removeBtn.onclick = (e) => removePanel(index, e);
+
+      actionsWrap.appendChild(removeBtn);
+      headerBar.appendChild(badge);
+      headerBar.appendChild(actionsWrap);
+      panel.appendChild(headerBar);
+
+      // Orientação visual amigável quando o quadro está vazio
+      const placeholder = document.createElement('div');
+      placeholder.className = "panel-empty-placeholder absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-slate-300 p-6 text-center transition-opacity duration-200";
+      placeholder.innerHTML = `
+        <span class="text-4xl mb-2 opacity-40">🎨</span>
+        <span class="panel-empty-title font-bangers text-xl text-slate-400 tracking-wide">Quadro #${index + 1} Vazio</span>
+        <span class="font-comic text-xs text-slate-400 mt-1 max-w-[240px]">Clique nos personagens, balões ou cenários na barra à esquerda para compor sua cena!</span>
+      `;
+      panel.appendChild(placeholder);
+
+      // Evento de clique para selecionar o quadro
+      panel.addEventListener('mousedown', (e) => {
+        if (e.target === panel || e.target.classList.contains('panel-empty-placeholder')) {
+          selectPanel(index);
+          deselectElement();
+        }
+      });
+
+      if (parentContainer) {
+        parentContainer.appendChild(panel);
+      }
+      state.panels.push({ id: index, element: panel, items: [] });
+      return panel;
+    }
+
+    function selectPanel(index) {
+      state.activePanelIndex = index;
+      document.querySelectorAll('[data-panel-index]').forEach(el => {
+        const idx = parseInt(el.getAttribute('data-panel-index'));
+        if (idx === index) {
+          el.classList.add('ring-4', 'ring-comicYellow');
+        } else {
+          el.classList.remove('ring-4', 'ring-comicYellow');
+        }
+      });
+      const lbl = document.getElementById('active-panel-label');
+      if (lbl && state.panels[index]) {
+        lbl.textContent = `Quadro Selecionado: #${index + 1} de ${state.panels.length}`;
+      }
+    }
+
+    /* ADIÇÃO DE ELEMENTOS AO QUADRO SELECIONADO */
+
+    // Adiciona Personagens, Cenários e Efeitos
+    function addGraphicAsset(category, assetId) {
+      const itemData = ASSETS[category].find(a => a.id === assetId);
+      if (!itemData) return;
+
+      const targetPanel = state.panels[state.activePanelIndex]?.element;
+      if (!targetPanel) return;
+
+      const elementId = `elem-${++state.elementCounter}`;
+      const wrapper = document.createElement('div');
+      wrapper.id = elementId;
+      wrapper.className = "absolute cursor-move select-none";
+      wrapper.style.left = "60px";
+      wrapper.style.top = "70px";
+      // Dimensões proporcionais aos novos quadros maiores
+      wrapper.style.width = category === 'scenery' ? "220px" : (category === 'effects' ? "150px" : "130px");
+      wrapper.style.height = category === 'scenery' ? "180px" : (category === 'effects' ? "110px" : "170px");
+      wrapper.style.zIndex = category === 'scenery' ? "5" : (category === 'characters' ? "10" : "15");
+      wrapper.setAttribute('data-type', category);
+      wrapper.setAttribute('data-flip', '1');
+      wrapper.setAttribute('data-rotation', '0');
+
+      wrapper.innerHTML = `
+        <div class="w-full h-full pointer-events-none asset-svg-holder">
+          ${itemData.svg}
+        </div>
+      `;
+
+      setupElementInteractions(wrapper, targetPanel);
+      targetPanel.appendChild(wrapper);
+      checkPanelPlaceholder(targetPanel);
+      selectElement(wrapper);
+      showToast(`Adicionado: ${itemData.name}!`, '✨');
+    }
+
+    // Adiciona Balões de Texto e Narração
+    function addSpeechBubble(bubbleType) {
+      const targetPanel = state.panels[state.activePanelIndex]?.element;
+      if (!targetPanel) return;
+
+      const elementId = `elem-${++state.elementCounter}`;
+      const wrapper = document.createElement('div');
+      wrapper.id = elementId;
+      wrapper.className = "absolute cursor-move select-none";
+      wrapper.style.left = "40px";
+      wrapper.style.top = "30px";
+      // Dimensões confortáveis e proporcionais aos quadros maiores
+      let bubbleW = "205px";
+      let bubbleH = "120px";
+      if (bubbleType === 'narration') {
+        bubbleW = "250px";
+        bubbleH = "90px";
+      } else if (bubbleType === 'shout') {
+        bubbleW = "220px";
+        bubbleH = "135px";
+      } else if (bubbleType === 'thought') {
+        bubbleW = "215px";
+        bubbleH = "130px";
+      }
+      wrapper.style.width = bubbleW;
+      wrapper.style.height = bubbleH;
+      wrapper.style.zIndex = "25"; // Balões sempre ficam no topo
+      wrapper.setAttribute('data-type', 'bubble');
+      wrapper.setAttribute('data-bubble-type', bubbleType);
+      wrapper.setAttribute('data-bubble-fill', bubbleType === 'shout' ? '#FFE600' : (bubbleType === 'narration' ? '#FEF08A' : '#ffffff'));
+      wrapper.setAttribute('data-text-color', '#000000');
+      wrapper.setAttribute('data-font-size', bubbleType === 'shout' ? '22' : (bubbleType === 'narration' ? '16' : '18'));
+      wrapper.setAttribute('data-font-family', bubbleType === 'shout' ? "'Bangers', cursive" : "'Comic Neue', cursive");
+      wrapper.setAttribute('data-tail-dir', 'left');
+      wrapper.setAttribute('data-flip', '1');
+      wrapper.setAttribute('data-rotation', '0');
+
+      let defaultText = "Olá! O que está acontecendo?";
+      if (bubbleType === 'thought') defaultText = "Preciso pensar num plano rápido...";
+      if (bubbleType === 'shout') defaultText = "CUIDADO COM ISSO!!";
+      if (bubbleType === 'narration') defaultText = "ENQUANTO ISSO, NO ALTO DO PRÉDIO...";
+      if (bubbleType === 'whisper') defaultText = "fale baixo, eles podem ouvir...";
+      if (bubbleType === 'broadcast') defaultText = "CÂMBIO! BASE RESPONDA!";
+
+      wrapper.setAttribute('data-text-content', defaultText);
+
+      renderBubbleContent(wrapper);
+      setupElementInteractions(wrapper, targetPanel);
+      targetPanel.appendChild(wrapper);
+      checkPanelPlaceholder(targetPanel);
+      selectElement(wrapper);
+      showToast('Balão de fala adicionado!', '💬');
+    }
+
+    // Renderiza a casca gráfica SVG e texto do balão
+    function renderBubbleContent(wrapper) {
+      const type = wrapper.getAttribute('data-bubble-type');
+      const text = wrapper.getAttribute('data-text-content') || '';
+      const fill = wrapper.getAttribute('data-bubble-fill') || '#ffffff';
+      const textColor = wrapper.getAttribute('data-text-color') || '#000000';
+      const fontSize = wrapper.getAttribute('data-font-size') || '18';
+      const fontFamily = wrapper.getAttribute('data-font-family') || "'Comic Neue', cursive";
+      const tailDir = wrapper.getAttribute('data-tail-dir') || 'left';
+
+      let shapeSvg = '';
+
+      if (type === 'speech') {
+        // Balão Oval Tradicional com Cauda para Esquerda ou Direita
+        const pathData = tailDir === 'left'
+          ? "M 25 15 Q 60 12 95 15 Q 112 18 112 45 Q 112 75 90 78 L 55 78 L 40 78 L 20 95 L 32 78 L 20 78 Q 8 75 8 45 Q 8 18 25 15 Z"
+          : "M 25 15 Q 60 12 95 15 Q 112 18 112 45 Q 112 75 100 78 L 88 78 L 100 95 L 80 78 L 20 78 Q 8 75 8 45 Q 8 18 25 15 Z";
+        shapeSvg = `
+          <svg viewBox="0 0 120 100" preserveAspectRatio="none" class="w-full h-full">
+            <path d="${pathData}" fill="${fill}" stroke="#000000" stroke-width="3.5" stroke-linejoin="round"/>
+          </svg>
+        `;
+      } else if (type === 'thought') {
+        // Balão Nuvem de Pensamento com círculos para Esquerda ou Direita
+        const circles = tailDir === 'left'
+          ? `<circle cx="35" cy="85" r="5.5" fill="${fill}" stroke="#000" stroke-width="2.5"/><circle cx="22" cy="94" r="3.5" fill="${fill}" stroke="#000" stroke-width="2.5"/>`
+          : `<circle cx="85" cy="85" r="5.5" fill="${fill}" stroke="#000" stroke-width="2.5"/><circle cx="98" cy="94" r="3.5" fill="${fill}" stroke="#000" stroke-width="2.5"/>`;
+        shapeSvg = `
+          <svg viewBox="0 0 120 100" preserveAspectRatio="none" class="w-full h-full">
+            <path d="M 30 32 C 16 26 16 54 30 60 C 35 74 54 74 66 68 C 80 74 98 74 104 60 C 118 54 118 26 104 26 C 98 12 80 12 66 18 C 54 12 35 12 30 32 Z" fill="${fill}" stroke="#000000" stroke-width="3.5" stroke-linejoin="round"/>
+            ${circles}
+          </svg>
+        `;
+      } else if (type === 'shout') {
+        // Balão de Explosão / Grito com ponta principal para Esquerda ou Direita
+        const points = tailDir === 'left'
+          ? "15,30 30,12 50,22 68,8 85,24 108,14 100,34 125,40 106,54 118,72 92,64 76,82 62,64 35,88 42,60 12,60 28,44"
+          : "105,30 90,12 70,22 52,8 35,24 12,14 20,34 -5,40 14,54 2,72 28,64 44,82 58,64 85,88 78,60 108,60 92,44";
+        shapeSvg = `
+          <svg viewBox="0 0 120 95" preserveAspectRatio="none" class="w-full h-full">
+            <polygon points="${points}" fill="${fill}" stroke="#000000" stroke-width="3.5" stroke-linejoin="round"/>
+          </svg>
+        `;
+      } else if (type === 'narration') {
+        // Caixa Retangular com Cantos Nítidos de Narração
+        shapeSvg = `
+          <svg viewBox="0 0 140 70" preserveAspectRatio="none" class="w-full h-full">
+            <rect x="4" y="4" width="132" height="62" rx="3" fill="${fill}" stroke="#000000" stroke-width="3.5"/>
+          </svg>
+        `;
+      } else if (type === 'whisper') {
+        // Balão Tracejado de Sussurro com Cauda para Esquerda ou Direita
+        const pathData = tailDir === 'left'
+          ? "M 25 15 Q 60 12 95 15 Q 112 18 112 45 Q 112 75 90 78 L 55 78 L 40 78 L 20 95 L 32 78 L 20 78 Q 8 75 8 45 Q 8 18 25 15 Z"
+          : "M 25 15 Q 60 12 95 15 Q 112 18 112 45 Q 112 75 100 78 L 88 78 L 100 95 L 80 78 L 20 78 Q 8 75 8 45 Q 8 18 25 15 Z";
+        shapeSvg = `
+          <svg viewBox="0 0 120 100" preserveAspectRatio="none" class="w-full h-full">
+            <path d="${pathData}" fill="${fill}" stroke="#000000" stroke-width="3" stroke-dasharray="6 4" stroke-linejoin="round"/>
+          </svg>
+        `;
+      } else {
+        // Comunicador / Transmissão
+        const points = tailDir === 'left'
+          ? "12,18 118,18 126,38 118,58 45,58 32,76 38,58 12,58 4,38"
+          : "12,18 118,18 126,38 118,58 88,58 94,76 82,58 12,58 4,38";
+        shapeSvg = `
+          <svg viewBox="0 0 130 80" preserveAspectRatio="none" class="w-full h-full">
+            <polygon points="${points}" fill="${fill}" stroke="#000000" stroke-width="3.5" stroke-linejoin="round"/>
+          </svg>
+        `;
+      }
+
+      // Zonas seguras para evitar que o texto encoste ou ultrapasse as bordas curvas do balão
+      let safePadding = 'padding: 10% 15% 26% 15%;';
+      let innerMaxWidth = '74%';
+
+      if (type === 'speech' || type === 'whisper') {
+        safePadding = 'padding: 10% 15% 26% 15%;';
+        innerMaxWidth = '74%';
+      } else if (type === 'thought') {
+        safePadding = 'padding: 14% 16% 30% 16%;';
+        innerMaxWidth = '70%';
+      } else if (type === 'shout') {
+        safePadding = 'padding: 16% 16% 16% 16%;';
+        innerMaxWidth = '70%';
+      } else if (type === 'narration') {
+        safePadding = 'padding: 8% 10% 8% 10%;';
+        innerMaxWidth = '85%';
+      } else if (type === 'broadcast') {
+        safePadding = 'padding: 12% 16% 26% 16%;';
+        innerMaxWidth = '74%';
+      }
+
+      wrapper.innerHTML = `
+        <div class="absolute inset-0 pointer-events-none">${shapeSvg}</div>
+        <div class="absolute inset-0 flex items-center justify-center overflow-hidden select-none pointer-events-none" style="${safePadding} box-sizing: border-box;">
+          <div class="flex items-center justify-center text-center w-full h-full" style="max-width: ${innerMaxWidth}; max-height: 100%;">
+            <span class="bubble-text-display font-bold uppercase text-center" style="
+              color: ${textColor} !important;
+              font-size: ${fontSize}px;
+              font-family: ${fontFamily};
+              line-height: 1.18;
+              word-break: break-word;
+              overflow-wrap: break-word;
+              text-wrap: balance;
+              white-space: pre-wrap;
+              display: block;
+              width: 100%;
+            ">${escapeHtml(text)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    /* INTERATIVIDADE DO ELEMENTO: Arrastar, Redimensionar, Girar */
+    function setupElementInteractions(element, panel) {
+      let isDragging = false;
+      let startX, startY;
+      let initialLeft, initialTop;
+
+      element.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('transform-handle') || e.target.classList.contains('transform-rotate-handle')) {
+          return; // Deixa os handles cuidarem do resize/rotate
+        }
+        e.stopPropagation();
+        selectPanel(parseInt(panel.getAttribute('data-panel-index')));
+        selectElement(element);
+
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        initialLeft = parseFloat(element.style.left) || 0;
+        initialTop = parseFloat(element.style.top) || 0;
+
+        const onMouseMove = (moveEvent) => {
+          if (!isDragging) return;
+          const dx = moveEvent.clientX - startX;
+          const dy = moveEvent.clientY - startY;
+          element.style.left = `${initialLeft + dx}px`;
+          element.style.top = `${initialTop + dy}px`;
+        };
+
+        const onMouseUp = () => {
+          isDragging = false;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    /* SELEÇÃO E CAIXA DE TRANSFORMAÇÃO */
+    function selectElement(element) {
+      if (state.selectedElement && state.selectedElement !== element) {
+        removeTransformHandles(state.selectedElement);
+      }
+      state.selectedElement = element;
+      element.classList.add('element-selected');
+      attachTransformHandles(element);
+      syncPropertiesPanel(element);
+    }
+
+    function deselectElement() {
+      if (state.selectedElement) {
+        removeTransformHandles(state.selectedElement);
+        state.selectedElement.classList.remove('element-selected');
+        state.selectedElement = null;
+      }
+      syncPropertiesPanel(null);
+    }
+
+    function removeTransformHandles(element) {
+      if (!element) return;
+      element.classList.remove('element-selected');
+      element.querySelectorAll('.transform-handle, .transform-rotate-handle, .transform-rotate-line').forEach(h => h.remove());
+    }
+
+    function attachTransformHandles(element) {
+      // Remove existentes primeiro
+      element.querySelectorAll('.transform-handle, .transform-rotate-handle, .transform-rotate-line').forEach(h => h.remove());
+
+      // Alça de Redimensionamento no canto inferior direito
+      const resizeHandle = document.createElement('div');
+      resizeHandle.className = 'transform-handle';
+      resizeHandle.style.right = '-7px';
+      resizeHandle.style.bottom = '-7px';
+      resizeHandle.style.cursor = 'se-resize';
+
+      let isResizing = false;
+      let initW, initH, startX, startY;
+
+      resizeHandle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        isResizing = true;
+        initW = element.offsetWidth;
+        initH = element.offsetHeight;
+        startX = e.clientX;
+        startY = e.clientY;
+
+        const onMouseMove = (moveEv) => {
+          if (!isResizing) return;
+          const newW = Math.max(60, initW + (moveEv.clientX - startX));
+          const newH = Math.max(40, initH + (moveEv.clientY - startY));
+          element.style.width = `${newW}px`;
+          element.style.height = `${newH}px`;
+        };
+
+        const onMouseUp = () => {
+          isResizing = false;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+
+      element.appendChild(resizeHandle);
+
+      // Alça de Rotação no topo
+      const rotateLine = document.createElement('div');
+      rotateLine.className = 'transform-rotate-line';
+
+      const rotateHandle = document.createElement('div');
+      rotateHandle.className = 'transform-rotate-handle';
+
+      let isRotating = false;
+
+      rotateHandle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        isRotating = true;
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        const onMouseMove = (moveEv) => {
+          if (!isRotating) return;
+          const rad = Math.atan2(moveEv.clientY - centerY, moveEv.clientX - centerX);
+          let deg = rad * (180 / Math.PI) - 90;
+          deg = Math.round(deg);
+          element.setAttribute('data-rotation', deg);
+          applyElementTransform(element);
+        };
+
+        const onMouseUp = () => {
+          isRotating = false;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+
+      element.appendChild(rotateLine);
+      element.appendChild(rotateHandle);
+    }
+
+    function applyElementTransform(element) {
+      const rot = element.getAttribute('data-rotation') || '0';
+      const flip = element.getAttribute('data-flip') || '1';
+      element.style.transform = `rotate(${rot}deg) scaleX(${flip})`;
+    }
+
+    /* SINCRONIZAÇÃO DO PAINEL DE PROPRIEDADES (SIDEBAR DIREITA) */
+    function syncPropertiesPanel(element) {
+      const emptyState = document.getElementById('prop-empty-state');
+      const controls = document.getElementById('prop-controls');
+      const typeBadge = document.getElementById('prop-item-type');
+      const textSection = document.getElementById('prop-text-section');
+
+      if (!element) {
+        emptyState.classList.remove('hidden');
+        controls.classList.add('hidden');
+        typeBadge.textContent = "Nenhum";
+        typeBadge.className = "text-[10px] font-bold uppercase bg-slate-200 border border-black px-1.5 py-0.5 rounded";
+        updateLayerIndicator();
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      controls.classList.remove('hidden');
+
+      const type = element.getAttribute('data-type');
+      typeBadge.textContent = type === 'bubble' ? 'Balão de Fala' : (type === 'characters' ? 'Personagem' : (type === 'scenery' ? 'Cenário' : 'Efeito'));
+      typeBadge.className = "text-[10px] font-bold uppercase bg-comicYellow border border-black px-1.5 py-0.5 rounded";
+
+      // Se for balão, exibe controles de texto
+      if (type === 'bubble') {
+        textSection.classList.remove('hidden');
+        document.getElementById('prop-bubble-text').value = element.getAttribute('data-text-content') || '';
+        document.getElementById('prop-font-size').value = element.getAttribute('data-font-size') || '18';
+        document.getElementById('prop-font-size-label').textContent = `${element.getAttribute('data-font-size') || '18'}px`;
+        document.getElementById('prop-font-family').value = element.getAttribute('data-font-family') || "'Comic Neue', cursive";
+        document.getElementById('prop-bubble-fill').value = element.getAttribute('data-bubble-fill') || '#ffffff';
+        document.getElementById('prop-bubble-fill-val').textContent = element.getAttribute('data-bubble-fill') || '#ffffff';
+        document.getElementById('prop-text-color').value = element.getAttribute('data-text-color') || '#000000';
+        document.getElementById('prop-text-color-val').textContent = element.getAttribute('data-text-color') || '#000000';
+
+        // Esconde cauda para narração e atualiza botões de cauda
+        const bType = element.getAttribute('data-bubble-type');
+        const tailBox = document.getElementById('prop-tail-direction-box');
+        if (bType === 'narration') {
+          tailBox.style.display = 'none';
+        } else {
+          tailBox.style.display = 'block';
+          const tDir = element.getAttribute('data-tail-dir') || 'left';
+          const btnL = document.getElementById('btn-tail-left');
+          const btnR = document.getElementById('btn-tail-right');
+          if (btnL && btnR) {
+            if (tDir === 'left') {
+              btnL.className = "flex-1 py-1 text-xs font-bold border-2 border-black rounded bg-comicYellow shadow-comic-sm transition";
+              btnR.className = "flex-1 py-1 text-xs font-bold border-2 border-black rounded bg-slate-100 hover:bg-slate-200 transition";
+            } else {
+              btnR.className = "flex-1 py-1 text-xs font-bold border-2 border-black rounded bg-comicYellow shadow-comic-sm transition";
+              btnL.className = "flex-1 py-1 text-xs font-bold border-2 border-black rounded bg-slate-100 hover:bg-slate-200 transition";
+            }
+          }
+        }
+      } else {
+        textSection.classList.add('hidden');
+      }
+
+      // Opacidade
+      const op = Math.round((parseFloat(element.style.opacity) || 1) * 100);
+      document.getElementById('prop-opacity').value = op;
+      document.getElementById('prop-opacity-val').textContent = `${op}%`;
+
+      // Atualiza indicador de camada
+      updateLayerIndicator();
+    }
+
+    /* ATUALIZADORES DE PROPRIEDADES VIA CONTROLES */
+    function updateSelectedTextContent(val) {
+      if (!state.selectedElement) return;
+      state.selectedElement.setAttribute('data-text-content', val);
+      renderBubbleContent(state.selectedElement);
+      attachTransformHandles(state.selectedElement);
+    }
+
+    function changeFontSize(delta) {
+      if (!state.selectedElement) return;
+      const current = parseInt(state.selectedElement.getAttribute('data-font-size')) || 18;
+      const next = Math.min(44, Math.max(12, current + delta));
+      updateSelectedFontSize(next);
+      const slider = document.getElementById('prop-font-size');
+      if (slider) slider.value = next;
+    }
+
+    function updateSelectedFontSize(val) {
+      if (!state.selectedElement) return;
+      state.selectedElement.setAttribute('data-font-size', val);
+      const label = document.getElementById('prop-font-size-label');
+      if (label) label.textContent = `${val}px`;
+      const slider = document.getElementById('prop-font-size');
+      if (slider && String(slider.value) !== String(val)) slider.value = val;
+      renderBubbleContent(state.selectedElement);
+      attachTransformHandles(state.selectedElement);
+    }
+
+    function updateSelectedFontFamily(val) {
+      if (!state.selectedElement) return;
+      state.selectedElement.setAttribute('data-font-family', val);
+      renderBubbleContent(state.selectedElement);
+      attachTransformHandles(state.selectedElement);
+    }
+
+    function updateSelectedFillColor(val) {
+      if (!state.selectedElement) return;
+      state.selectedElement.setAttribute('data-bubble-fill', val);
+      const valLabel = document.getElementById('prop-bubble-fill-val');
+      if (valLabel) valLabel.textContent = val;
+      const input = document.getElementById('prop-bubble-fill');
+      if (input && input.value !== val) input.value = val;
+      renderBubbleContent(state.selectedElement);
+      attachTransformHandles(state.selectedElement);
+    }
+
+    function updateSelectedTextColor(val) {
+      if (!state.selectedElement) return;
+      state.selectedElement.setAttribute('data-text-color', val);
+      const valLabel = document.getElementById('prop-text-color-val');
+      if (valLabel) valLabel.textContent = val;
+      const input = document.getElementById('prop-text-color');
+      if (input && input.value !== val) input.value = val;
+      renderBubbleContent(state.selectedElement);
+      attachTransformHandles(state.selectedElement);
+    }
+
+    function setBubbleTail(direction) {
+      if (!state.selectedElement) return;
+      state.selectedElement.setAttribute('data-tail-dir', direction);
+      renderBubbleContent(state.selectedElement);
+      attachTransformHandles(state.selectedElement);
+      syncPropertiesPanel(state.selectedElement);
+      showToast(direction === 'left' ? 'Cauda para a esquerda 👈' : 'Cauda para a direita 👉', '💬');
+    }
+
+    function updateSelectedOpacity(val) {
+      if (!state.selectedElement) return;
+      state.selectedElement.style.opacity = val / 100;
+      document.getElementById('prop-opacity-val').textContent = `${val}%`;
+    }
+
+    function flipSelectedHorizontal() {
+      if (!state.selectedElement) return;
+      const current = state.selectedElement.getAttribute('data-flip') || '1';
+      const next = current === '1' ? '-1' : '1';
+      state.selectedElement.setAttribute('data-flip', next);
+      applyElementTransform(state.selectedElement);
+    }
+
+    /* GESTÃO AVANÇADA DE CAMADAS (POSIÇÃO & ORDEM DOS ITENS NO QUADRO) */
+    function getSortedPanelItems(panel) {
+      if (!panel) return [];
+      const items = Array.from(panel.querySelectorAll(':scope > [data-type]'));
+      return items.sort((a, b) => {
+        const za = parseFloat(a.style.zIndex) || 0;
+        const zb = parseFloat(b.style.zIndex) || 0;
+        if (za !== zb) return za - zb;
+        return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+      });
+    }
+
+    function applyLayerStack(panel, items) {
+      if (!panel || !items.length) return;
+      items.forEach((item, idx) => {
+        const newZ = 5 + idx * 3;
+        item.style.zIndex = String(newZ);
+        panel.appendChild(item);
+      });
+
+      if (state.selectedElement && state.selectedElement.parentElement === panel) {
+        attachTransformHandles(state.selectedElement);
+      }
+
+      updateLayerIndicator();
+    }
+
+    function updateLayerIndicator() {
+      const ind = document.getElementById('prop-layer-indicator');
+      if (!ind) return;
+
+      if (!state.selectedElement || !state.selectedElement.parentElement) {
+        ind.textContent = '';
+        return;
+      }
+
+      const panel = state.selectedElement.parentElement;
+      const items = getSortedPanelItems(panel);
+      const idx = items.indexOf(state.selectedElement);
+      if (idx !== -1 && items.length > 0) {
+        ind.textContent = `Camada ${idx + 1} de ${items.length}`;
+      } else {
+        ind.textContent = '';
+      }
+    }
+
+    function bringSelectedForward() {
+      if (!state.selectedElement) {
+        showToast('Selecione um item primeiro!', '⚠️');
+        return;
+      }
+      const panel = state.selectedElement.parentElement;
+      if (!panel) return;
+
+      const items = getSortedPanelItems(panel);
+      const currentIndex = items.indexOf(state.selectedElement);
+      if (currentIndex === -1) return;
+
+      if (currentIndex >= items.length - 1) {
+        showToast('O item já está na camada mais à frente!', 'ℹ️');
+        return;
+      }
+
+      // Troca com o item imediatamente à frente
+      const nextItem = items[currentIndex + 1];
+      items[currentIndex] = nextItem;
+      items[currentIndex + 1] = state.selectedElement;
+
+      applyLayerStack(panel, items);
+      showToast(`Avançado para a camada ${currentIndex + 2} de ${items.length}!`, '🔼');
+    }
+
+    function sendSelectedBackward() {
+      if (!state.selectedElement) {
+        showToast('Selecione um item primeiro!', '⚠️');
+        return;
+      }
+      const panel = state.selectedElement.parentElement;
+      if (!panel) return;
+
+      const items = getSortedPanelItems(panel);
+      const currentIndex = items.indexOf(state.selectedElement);
+      if (currentIndex === -1) return;
+
+      if (currentIndex <= 0) {
+        showToast('O item já está no fundo da cena!', 'ℹ️');
+        return;
+      }
+
+      // Troca com o item imediatamente atrás
+      const prevItem = items[currentIndex - 1];
+      items[currentIndex] = prevItem;
+      items[currentIndex - 1] = state.selectedElement;
+
+      applyLayerStack(panel, items);
+      showToast(`Recuado para a camada ${currentIndex} de ${items.length}!`, '🔽');
+    }
+
+    function bringSelectedToFront() {
+      if (!state.selectedElement) {
+        showToast('Selecione um item primeiro!', '⚠️');
+        return;
+      }
+      const panel = state.selectedElement.parentElement;
+      if (!panel) return;
+
+      const items = getSortedPanelItems(panel);
+      const currentIndex = items.indexOf(state.selectedElement);
+      if (currentIndex === -1 || currentIndex >= items.length - 1) {
+        showToast('O item já está na frente de tudo!', 'ℹ️');
+        return;
+      }
+
+      items.splice(currentIndex, 1);
+      items.push(state.selectedElement);
+
+      applyLayerStack(panel, items);
+      showToast(`Trazido para o topo de tudo!`, '⏫');
+    }
+
+    function sendSelectedToBack() {
+      if (!state.selectedElement) {
+        showToast('Selecione um item primeiro!', '⚠️');
+        return;
+      }
+      const panel = state.selectedElement.parentElement;
+      if (!panel) return;
+
+      const items = getSortedPanelItems(panel);
+      const currentIndex = items.indexOf(state.selectedElement);
+      if (currentIndex === -1 || currentIndex <= 0) {
+        showToast('O item já está no fundo de tudo!', 'ℹ️');
+        return;
+      }
+
+      items.splice(currentIndex, 1);
+      items.unshift(state.selectedElement);
+
+      applyLayerStack(panel, items);
+      showToast(`Enviado para trás de tudo!`, '⏬');
+    }
+
+    function duplicateSelectedElement() {
+      if (!state.selectedElement) return;
+      const panel = state.selectedElement.parentElement;
+      const clone = state.selectedElement.cloneNode(true);
+      clone.id = `elem-${++state.elementCounter}`;
+      clone.style.left = `${(parseFloat(state.selectedElement.style.left) || 0) + 20}px`;
+      clone.style.top = `${(parseFloat(state.selectedElement.style.top) || 0) + 20}px`;
+      
+      removeTransformHandles(clone);
+      setupElementInteractions(clone, panel);
+      panel.appendChild(clone);
+      checkPanelPlaceholder(panel);
+      
+      const items = getSortedPanelItems(panel);
+      applyLayerStack(panel, items);
+      
+      selectElement(clone);
+      showToast('Elemento duplicado!', '📄');
+    }
+
+    function deleteSelectedElement() {
+      if (!state.selectedElement) return;
+      const el = state.selectedElement;
+      const panel = el.parentElement;
+      deselectElement();
+      el.remove();
+      if (panel) {
+        checkPanelPlaceholder(panel);
+        const items = getSortedPanelItems(panel);
+        applyLayerStack(panel, items);
+      }
+      showToast('Elemento removido!', '🗑️');
+    }
+
+    // Tecla Delete remove elemento ativo
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Se não estiver digitando dentro de um input/textarea
+        if (!['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+          deleteSelectedElement();
+        }
+      }
+    });
+
+    /* CARREGAR HISTÓRIA DE EXEMPLO (DEMO COMPLETO) */
+    function loadSampleStory() {
+      setLayout('strip3');
+
+      setTimeout(() => {
+        // QUADRO 1: A Cidade em perigo
+        const p1 = state.panels[0].element;
+        addDemoItem(p1, 'scenery', 'skyscrapers', 15, 160, 250, 220, 2);
+        addDemoItem(p1, 'scenery', 'street_lamp', 220, 200, 80, 180, 4);
+        addDemoItem(p1, 'characters', 'villain', 120, 190, 120, 180, 10);
+        addDemoBubble(p1, 'narration', 'ENQUANTO A CIDADE DORME...', 15, 15, 260, 70, 30, '#FEF08A');
+        addDemoBubble(p1, 'speech', 'Hoje tudo será meu! Hehehe!', 75, 95, 200, 90, 30, '#FFFFFF', 'left');
+
+        // QUADRO 2: O Herói surge voando com grito
+        const p2 = state.panels[1].element;
+        addDemoItem(p2, 'scenery', 'mountains', 15, 180, 320, 190, 2);
+        addDemoItem(p2, 'scenery', 'sun_cloud', 170, 20, 140, 100, 3);
+        addDemoItem(p2, 'characters', 'superhero', 90, 160, 140, 190, 10);
+        addDemoItem(p2, 'effects', 'action_lines', 20, 30, 300, 170, 5);
+        addDemoBubble(p2, 'shout', 'NÃO TÃO RÁPIDO, VILÃO!', 50, 60, 220, 90, 30, '#FFE600');
+
+        // QUADRO 3: O Golpe triunfal e o pet comemorando
+        const p3 = state.panels[2].element;
+        addDemoItem(p3, 'scenery', 'tree_oak', 10, 150, 180, 210, 3);
+        addDemoItem(p3, 'characters', 'doge_hero', 35, 230, 120, 130, 10);
+        addDemoItem(p3, 'effects', 'pow_boom', 130, 95, 190, 140, 20);
+        addDemoBubble(p3, 'thought', 'Sabia que ele venceria!', 45, 140, 190, 85, 30, '#FFFFFF', 'left');
+
+        state.panels.forEach(p => checkPanelPlaceholder(p.element));
+
+        selectPanel(0);
+        showToast('História de exemplo carregada com sucesso!', '🦸‍♂️');
+      }, 100);
+    }
+
+    function addDemoItem(panel, category, id, left, top, w, h, z) {
+      const itemData = ASSETS[category].find(a => a.id === id);
+      if (!itemData) return;
+      const el = document.createElement('div');
+      el.id = `elem-${++state.elementCounter}`;
+      el.className = "absolute cursor-move select-none";
+      el.style.left = `${left}px`;
+      el.style.top = `${top}px`;
+      el.style.width = `${w}px`;
+      el.style.height = `${h}px`;
+      el.style.zIndex = z;
+      el.setAttribute('data-type', category);
+      el.setAttribute('data-flip', '1');
+      el.setAttribute('data-rotation', '0');
+      el.innerHTML = `<div class="w-full h-full pointer-events-none">${itemData.svg}</div>`;
+      setupElementInteractions(el, panel);
+      panel.appendChild(el);
+      checkPanelPlaceholder(panel);
+    }
+
+    function addDemoBubble(panel, type, text, left, top, w, h, z, fill, tail = 'left') {
+      const el = document.createElement('div');
+      el.id = `elem-${++state.elementCounter}`;
+      el.className = "absolute cursor-move select-none";
+      el.style.left = `${left}px`;
+      el.style.top = `${top}px`;
+      el.style.width = `${w}px`;
+      el.style.height = `${h}px`;
+      el.style.zIndex = z;
+      el.setAttribute('data-type', 'bubble');
+      el.setAttribute('data-bubble-type', type);
+      el.setAttribute('data-text-content', text);
+      el.setAttribute('data-bubble-fill', fill);
+      el.setAttribute('data-text-color', '#000000');
+      el.setAttribute('data-font-size', type === 'shout' ? '20' : '17');
+      el.setAttribute('data-font-family', type === 'shout' ? "'Bangers', cursive" : "'Comic Neue', cursive");
+      el.setAttribute('data-tail-dir', tail);
+      el.setAttribute('data-flip', '1');
+      el.setAttribute('data-rotation', '0');
+      renderBubbleContent(el);
+      setupElementInteractions(el, panel);
+      panel.appendChild(el);
+      checkPanelPlaceholder(panel);
+    }
+
+    function confirmClearCanvas() {
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+    }
+
+    function executeClearCanvas() {
+      closeConfirmModal();
+      state.panels.forEach(p => {
+        const items = p.element.querySelectorAll('[data-type]');
+        items.forEach(it => it.remove());
+        checkPanelPlaceholder(p.element);
+      });
+      deselectElement();
+      showToast('Prancheta limpa com sucesso!', '🧹');
+    }
+
+    /* NOTIFICAÇÃO TOAST VISUAL */
+    let toastTimeout;
+    function showToast(msg, icon = '✨') {
+      const toast = document.getElementById('toast-msg');
+      const txt = document.getElementById('toast-text');
+      const icn = document.getElementById('toast-icon');
+
+      txt.textContent = msg;
+      icn.textContent = icon;
+
+      clearTimeout(toastTimeout);
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 2600);
+    }
+
+    function escapeHtml(string) {
+      return String(string).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    /* INICIALIZAÇÃO AO CARREGAR A PÁGINA */
+    window.addEventListener('DOMContentLoaded', () => {
+      populateCatalog();
+      // Inicia no modo de criar quadro a quadro (1 por vez) com tela ampla e limpa para o usuário criar do zero
+      setLayout('step');
+    });
+  </script>
+</body>
+</html>
