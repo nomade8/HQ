@@ -110,6 +110,17 @@
       aspect-ratio: 1 / 1;
       width: 100%;
     }
+    /* Estilos do Modo de Pintura de Fundo por Linha */
+    .panel-bg-draw-overlay {
+      background: rgba(0, 0, 0, 0.02);
+      cursor: crosshair;
+    }
+    .panel-bg-draw-overlay:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+    .panel-bg-layer {
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans h-screen flex flex-col overflow-hidden select-none">
@@ -167,22 +178,26 @@
     <aside class="w-80 md:w-88 bg-white border-r-4 border-black flex flex-col shrink-0 shadow-lg z-20">
       
       <!-- Seletor de Abas da Biblioteca -->
-      <div class="grid grid-cols-4 bg-slate-200 border-b-2 border-black p-1 gap-1">
+      <div class="grid grid-cols-5 bg-slate-200 border-b-2 border-black p-1 gap-1">
         <button onclick="switchTab('balloons')" id="tab-btn-balloons" class="tab-btn active bg-comicYellow border-2 border-black rounded py-1.5 text-xs font-bold flex flex-col items-center gap-0.5 shadow-comic-sm">
           <span class="text-base">💬</span>
-          <span>Balões</span>
+          <span class="text-[10px] md:text-xs">Balões</span>
         </button>
         <button onclick="switchTab('characters')" id="tab-btn-characters" class="tab-btn bg-white hover:bg-slate-100 border-2 border-transparent rounded py-1.5 text-xs font-bold flex flex-col items-center gap-0.5">
           <span class="text-base">👥</span>
-          <span>Pessoas</span>
+          <span class="text-[10px] md:text-xs">Pessoas</span>
         </button>
         <button onclick="switchTab('scenery')" id="tab-btn-scenery" class="tab-btn bg-white hover:bg-slate-100 border-2 border-transparent rounded py-1.5 text-xs font-bold flex flex-col items-center gap-0.5">
           <span class="text-base">🏙️</span>
-          <span>Cenário</span>
+          <span class="text-[10px] md:text-xs">Cenário</span>
         </button>
         <button onclick="switchTab('effects')" id="tab-btn-effects" class="tab-btn bg-white hover:bg-slate-100 border-2 border-transparent rounded py-1.5 text-xs font-bold flex flex-col items-center gap-0.5">
           <span class="text-base">💥</span>
-          <span>Efeitos</span>
+          <span class="text-[10px] md:text-xs">Efeitos</span>
+        </button>
+        <button onclick="switchTab('backgrounds')" id="tab-btn-backgrounds" class="tab-btn bg-white hover:bg-slate-100 border-2 border-transparent rounded py-1.5 text-xs font-bold flex flex-col items-center gap-0.5" title="Pintar o fundo arrastando uma linha">
+          <span class="text-base">🎨</span>
+          <span class="text-[10px] md:text-xs font-extrabold text-amber-700">Fundo</span>
         </button>
       </div>
 
@@ -291,6 +306,174 @@
           </div>
         </div>
 
+        <!-- ABA 5: CORES DE FUNDO (PINTAR ARRASTANDO UMA LINHA) -->
+        <div id="tab-content-backgrounds" class="tab-pane hidden space-y-4">
+          <h3 class="font-bangers tracking-wide text-lg text-slate-800 border-b-2 border-black pb-1 flex items-center justify-between">
+            <span>Cores de Fundo da HQ</span>
+            <span class="text-[10px] font-sans text-amber-900 bg-amber-200 border border-black px-1.5 py-0.5 rounded font-bold uppercase shadow-comic-sm">Por Linha</span>
+          </h3>
+
+          <!-- Instrução Rápida de Uso -->
+          <div class="bg-amber-50 border-2 border-black rounded-lg p-2.5 text-xs text-amber-950 font-comic shadow-comic-sm space-y-1">
+            <div class="flex items-center gap-1 font-bold text-slate-900">
+              <span class="text-base">📏</span>
+              <span>Como pintar o fundo:</span>
+            </div>
+            <p class="text-[11px] leading-snug">
+              Clique em uma cor abaixo, depois <b>clique e arraste uma linha</b> na cena. <b>Onde a linha começa e acaba</b> é onde a cor será aplicada!
+            </p>
+          </div>
+
+          <!-- Cores Pré-prontas Pastéis / Claras -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-bold text-slate-700 uppercase flex items-center gap-1">
+                <span>🎨 Cores Pastéis Prontas</span>
+              </label>
+              <span class="text-[10px] font-bold text-slate-500 font-mono" id="selected-color-code">#BAE6FD</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2" id="bg-preset-colors-grid">
+              <!-- Botão Verde Grama -->
+              <button type="button" onclick="selectBgPresetColor('#B8E8B4', 'Verde (Grama)')" data-color="#B8E8B4" class="bg-color-btn p-2 rounded-lg border-2 border-black flex items-center gap-2 hover:scale-[1.02] transition shadow-comic-sm text-left bg-white">
+                <span class="w-6 h-6 rounded-full border-2 border-black shrink-0 shadow-sm" style="background-color: #B8E8B4;"></span>
+                <div class="flex flex-col overflow-hidden">
+                  <span class="text-xs font-bold text-slate-800 truncate">Verde (Grama)</span>
+                  <span class="text-[10px] text-slate-500">Chão & Campos</span>
+                </div>
+              </button>
+
+              <!-- Botão Marrom Terra -->
+              <button type="button" onclick="selectBgPresetColor('#D9BF9D', 'Marrom (Terra)')" data-color="#D9BF9D" class="bg-color-btn p-2 rounded-lg border-2 border-black flex items-center gap-2 hover:scale-[1.02] transition shadow-comic-sm text-left bg-white">
+                <span class="w-6 h-6 rounded-full border-2 border-black shrink-0 shadow-sm" style="background-color: #D9BF9D;"></span>
+                <div class="flex flex-col overflow-hidden">
+                  <span class="text-xs font-bold text-slate-800 truncate">Marrom (Terra)</span>
+                  <span class="text-[10px] text-slate-500">Solo & Estrada</span>
+                </div>
+              </button>
+
+              <!-- Botão Azul Céu -->
+              <button type="button" onclick="selectBgPresetColor('#BAE6FD', 'Azul (Céu)')" data-color="#BAE6FD" class="bg-color-btn p-2 rounded-lg border-2 border-black flex items-center gap-2 hover:scale-[1.02] transition shadow-comic-sm text-left ring-2 ring-amber-500 bg-amber-50">
+                <span class="w-6 h-6 rounded-full border-2 border-black shrink-0 shadow-sm" style="background-color: #BAE6FD;"></span>
+                <div class="flex flex-col overflow-hidden">
+                  <span class="text-xs font-bold text-slate-800 truncate">Azul (Céu)</span>
+                  <span class="text-[10px] text-slate-500">Céu Límpido</span>
+                </div>
+              </button>
+
+              <!-- Botão Roxo Pastel -->
+              <button type="button" onclick="selectBgPresetColor('#E0CEF7', 'Roxo (Pastel)')" data-color="#E0CEF7" class="bg-color-btn p-2 rounded-lg border-2 border-black flex items-center gap-2 hover:scale-[1.02] transition shadow-comic-sm text-left bg-white">
+                <span class="w-6 h-6 rounded-full border-2 border-black shrink-0 shadow-sm" style="background-color: #E0CEF7;"></span>
+                <div class="flex flex-col overflow-hidden">
+                  <span class="text-xs font-bold text-slate-800 truncate">Roxo (Pastel)</span>
+                  <span class="text-[10px] text-slate-500">Crepúsculo</span>
+                </div>
+              </button>
+
+              <!-- Botão Laranja Pastel -->
+              <button type="button" onclick="selectBgPresetColor('#FFD5A5', 'Laranja (Pastel)')" data-color="#FFD5A5" class="bg-color-btn p-2 rounded-lg border-2 border-black flex items-center gap-2 hover:scale-[1.02] transition shadow-comic-sm text-left bg-white">
+                <span class="w-6 h-6 rounded-full border-2 border-black shrink-0 shadow-sm" style="background-color: #FFD5A5;"></span>
+                <div class="flex flex-col overflow-hidden">
+                  <span class="text-xs font-bold text-slate-800 truncate">Laranja (Pastel)</span>
+                  <span class="text-[10px] text-slate-500">Pôr do Sol</span>
+                </div>
+              </button>
+
+              <!-- Botão Amarelo Suave -->
+              <button type="button" onclick="selectBgPresetColor('#FEF08A', 'Amarelo (Suave)')" data-color="#FEF08A" class="bg-color-btn p-2 rounded-lg border-2 border-black flex items-center gap-2 hover:scale-[1.02] transition shadow-comic-sm text-left bg-white">
+                <span class="w-6 h-6 rounded-full border-2 border-black shrink-0 shadow-sm" style="background-color: #FEF08A;"></span>
+                <div class="flex flex-col overflow-hidden">
+                  <span class="text-xs font-bold text-slate-800 truncate">Amarelo (Suave)</span>
+                  <span class="text-[10px] text-slate-500">Luz & Calor</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Seletor Livre de Cor Personalizada -->
+            <div class="mt-2.5 flex items-center gap-2 bg-slate-100 p-2 rounded-lg border border-black">
+              <input type="color" id="bg-custom-color-input" value="#BAE6FD" oninput="setCustomBgColor(this.value)" class="w-8 h-8 rounded border-2 border-black cursor-pointer p-0.5">
+              <div class="flex-1">
+                <span class="text-xs font-bold block text-slate-800">Cor Personalizada</span>
+                <span class="text-[10px] text-slate-500 font-comic">Escolha qualquer tom pastel</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modo do Desenho da Linha -->
+          <div class="pt-2 border-t-2 border-slate-200">
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Modo de Aplicação da Linha</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button type="button" id="btn-bg-mode-horizontal" onclick="setBgMode('horizontal')" class="px-2 py-1.5 text-xs font-bold rounded border-2 border-black bg-comicYellow shadow-comic-sm flex items-center justify-center gap-1 transition" title="Preenche a largura inteira entre o início e fim da linha">
+                <span>↕️ Faixa Horizontal</span>
+              </button>
+              <button type="button" id="btn-bg-mode-box" onclick="setBgMode('box')" class="px-2 py-1.5 text-xs font-bold rounded border border-black bg-white hover:bg-slate-100 shadow-comic-sm flex items-center justify-center gap-1 transition" title="Preenche exatamente o retângulo entre o ponto inicial e final">
+                <span>🔲 Bloco Livre</span>
+              </button>
+            </div>
+            <span class="text-[10px] text-slate-500 font-comic block mt-1" id="bg-mode-desc">
+              💡 <b>Faixa Horizontal:</b> Arraste de cima para baixo para pintar faixas inteiras de céu, grama e terra.
+            </span>
+          </div>
+
+          <!-- Ações Rápidas -->
+          <div class="pt-2 border-t-2 border-slate-200 space-y-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase">Ações do Quadro Ativo</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button type="button" onclick="undoBgLayer()" class="px-2 py-1.5 text-xs font-bold bg-slate-100 hover:bg-amber-100 border border-black rounded shadow-comic-sm flex items-center justify-center gap-1 transition active:translate-y-0.5" title="Desfazer a última faixa desenhada">
+                <span>↩️ Desfazer Faixa</span>
+              </button>
+              <button type="button" onclick="fillWholePanelBg()" class="px-2 py-1.5 text-xs font-bold bg-sky-100 hover:bg-sky-200 border border-black rounded shadow-comic-sm flex items-center justify-center gap-1 transition active:translate-y-0.5" title="Pintar o quadro inteiro com a cor selecionada">
+                <span>🎨 Preencher Tudo</span>
+              </button>
+            </div>
+            <button type="button" onclick="clearPanelBg()" class="w-full px-2 py-1.5 text-xs font-bold bg-rose-100 hover:bg-rose-200 text-rose-800 border border-black rounded shadow-comic-sm flex items-center justify-center gap-1 transition active:translate-y-0.5" title="Remover todas as cores de fundo do quadro selecionado">
+              <span>🧹 Limpar Cores do Quadro</span>
+            </button>
+          </div>
+
+          <!-- Combos Prontos de Cenário -->
+          <div class="pt-2 border-t-2 border-slate-200">
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Cenários Prontos (1 Clique)</label>
+            <div class="space-y-1.5">
+              <button type="button" onclick="applyBgCombo('sky_grass_earth')" class="w-full p-1.5 rounded border border-black bg-white hover:bg-amber-50 shadow-comic-sm flex items-center justify-between text-xs transition">
+                <span class="font-bold text-slate-800">🌄 Céu + Grama + Terra</span>
+                <div class="flex gap-1">
+                  <span class="w-4 h-4 rounded-full border border-black" style="background-color: #BAE6FD;"></span>
+                  <span class="w-4 h-4 rounded-full border border-black" style="background-color: #B8E8B4;"></span>
+                  <span class="w-4 h-4 rounded-full border border-black" style="background-color: #D9BF9D;"></span>
+                </div>
+              </button>
+              <button type="button" onclick="applyBgCombo('sky_grass')" class="w-full p-1.5 rounded border border-black bg-white hover:bg-amber-50 shadow-comic-sm flex items-center justify-between text-xs transition">
+                <span class="font-bold text-slate-800">☁️ Céu Aberto + Grama</span>
+                <div class="flex gap-1">
+                  <span class="w-4 h-4 rounded-full border border-black" style="background-color: #BAE6FD;"></span>
+                  <span class="w-4 h-4 rounded-full border border-black" style="background-color: #B8E8B4;"></span>
+                </div>
+              </button>
+              <button type="button" onclick="applyBgCombo('sunset_earth')" class="w-full p-1.5 rounded border border-black bg-white hover:bg-amber-50 shadow-comic-sm flex items-center justify-between text-xs transition">
+                <span class="font-bold text-slate-800">🌅 Pôr do Sol + Terra</span>
+                <div class="flex gap-1">
+                  <span class="w-4 h-4 rounded-full border border-black" style="background-color: #E0CEF7;"></span>
+                  <span class="w-4 h-4 rounded-full border border-black" style="background-color: #FFD5A5;"></span>
+                  <span class="w-4 h-4 rounded-full border border-black" style="background-color: #D9BF9D;"></span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Faixas Atualmente no Quadro Selecionado -->
+          <div class="pt-2 border-t-2 border-slate-200">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-bold text-slate-700 uppercase">Faixas no Quadro Ativo</label>
+              <span id="bg-layers-count-badge" class="text-[10px] font-bold bg-slate-200 border border-black px-1.5 rounded">0 faixas</span>
+            </div>
+            <div id="bg-layers-list" class="space-y-1 text-xs max-h-32 overflow-y-auto">
+              <!-- Injetado dinamicamente -->
+              <p class="text-[11px] text-slate-400 italic">Nenhuma faixa de cor ainda. Arraste uma linha no quadro para pintar!</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </aside>
 
@@ -304,8 +487,28 @@
           <span id="active-panel-label">Quadro Selecionado: #1</span>
         </div>
         <span class="text-slate-300">|</span>
+        <!-- Botão Rápido de Pintar Fundo -->
+        <button onclick="toggleBgToolFromStage()" id="btn-toggle-bg-mode" class="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded border-2 border-black bg-white hover:bg-amber-100 transition shadow-comic-sm active:translate-y-0.5" title="Ativar/desativar modo de desenhar linha de cor no fundo">
+          <span class="w-3.5 h-3.5 rounded-full border border-black" id="stage-bg-color-indicator" style="background-color: #BAE6FD;"></span>
+          <span id="btn-toggle-bg-text">🎨 Pintar Fundo (Linha)</span>
+        </button>
+        <span class="text-slate-300">|</span>
         <button onclick="addNewPanel()" id="stage-add-panel-btn" class="text-amber-600 hover:text-black hover:underline flex items-center gap-1 font-bangers tracking-wider text-sm transition">
           <span id="stage-add-panel-text">➕ Adicionar Próximo Quadro</span>
+        </button>
+      </div>
+
+      <!-- Banner Informativo quando o Modo Pintar Fundo está ativo -->
+      <div id="bg-mode-banner" class="hidden mb-3 bg-amber-100 border-2 border-black rounded-lg px-3.5 py-1.5 shadow-comic-sm items-center justify-between gap-3 text-xs font-comic max-w-2xl w-full">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-bangers tracking-wider text-sm text-black">🎨 MODO PINTURA ATIVO:</span>
+          <span>Clique e arraste uma linha no quadro para aplicar:</span>
+          <span id="banner-color-pill" class="px-2 py-0.5 rounded border border-black font-bold text-[11px] shadow-comic-sm flex items-center gap-1" style="background-color: #BAE6FD;">
+            <span id="banner-color-name">Azul (Céu)</span>
+          </span>
+        </div>
+        <button onclick="setBgToolActive(false)" class="text-[11px] font-bold bg-white hover:bg-slate-100 border border-black px-2 py-0.5 rounded shadow-comic-sm whitespace-nowrap active:translate-y-0.5">
+          ✓ Voltar aos Itens
         </button>
       </div>
 
@@ -500,11 +703,17 @@
     const state = {
       currentLayout: 'step', // 'step', 'single', 'strip3', 'grid4'
       activePanelIndex: 0,
-      panels: [], // Dados e referências dos quadros
+      panels: [], // Dados e referências dos quadros: { id, element, items: [], bgLayers: [] }
       selectedElement: null,
       draggedItem: null,
       elementCounter: 0,
-      isInteracting: false
+      isInteracting: false,
+      bgTool: {
+        active: false,
+        color: '#BAE6FD',
+        colorName: 'Azul (Céu)',
+        mode: 'horizontal' // 'horizontal', 'box'
+      }
     };
 
     /* ASSETS VETORIAIS DE ALTA QUALIDADE: Personagens, Cenários e Efeitos */
@@ -1219,6 +1428,13 @@
         activeBtn.classList.add('bg-comicYellow', 'border-black', 'shadow-comic-sm');
         activePane.classList.remove('hidden');
       }
+
+      // Se entrou na aba de fundo, ativa o modo de desenho da linha de fundo
+      if (tabId === 'backgrounds') {
+        setBgToolActive(true);
+      } else {
+        setBgToolActive(false);
+      }
     }
 
     /* GESTÃO DOS QUADROS (LAYOUTS DA HQ & MODO PASSO A PASSO) */
@@ -1480,15 +1696,27 @@
       const placeholder = panel.querySelector('.panel-empty-placeholder');
       if (!placeholder) return;
       const hasItems = panel.querySelectorAll('[data-type]').length > 0;
-      placeholder.style.display = hasItems ? 'none' : 'flex';
+      const hasBg = panel.querySelectorAll('.panel-bg-layer').length > 0;
+      placeholder.style.display = (hasItems || hasBg) ? 'none' : 'flex';
     }
 
     /* MONTAGEM DO ELEMENTO DO QUADRO NO DOM */
     function createPanelElement(index, title, parentContainer, heightClass = 'w-full aspect-square comic-panel-square') {
       const panel = document.createElement('div');
       panel.id = `panel-${index}`;
-      panel.className = `relative bg-white border-4 border-black ${heightClass} overflow-hidden rounded-xl shadow-sm select-none cursor-crosshair transition-all`;
+      panel.className = `relative bg-white border-4 border-black ${heightClass} overflow-hidden rounded-xl shadow-sm select-none transition-all`;
       panel.setAttribute('data-panel-index', index);
+
+      // Container de camadas de cor de fundo (z-index: 1, sempre atrás de personagens e balões)
+      const bgContainer = document.createElement('div');
+      bgContainer.className = "panel-bg-container absolute inset-0 overflow-hidden pointer-events-none z-[1]";
+      panel.appendChild(bgContainer);
+
+      // Camada de Desenho Interativo da Linha de Fundo (z-index: 35, ativa quando bgTool está ligado)
+      const drawOverlay = document.createElement('div');
+      drawOverlay.className = `panel-bg-draw-overlay absolute inset-0 z-30 select-none ${state.bgTool.active ? '' : 'hidden'}`;
+      setupBgLineDrawing(drawOverlay, panel, index);
+      panel.appendChild(drawOverlay);
 
       // Barra superior discreta do quadro
       const headerBar = document.createElement('div');
@@ -1517,17 +1745,17 @@
 
       // Orientação visual amigável quando o quadro está vazio
       const placeholder = document.createElement('div');
-      placeholder.className = "panel-empty-placeholder absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-slate-300 p-6 text-center transition-opacity duration-200";
+      placeholder.className = "panel-empty-placeholder absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-slate-300 p-6 text-center transition-opacity duration-200 z-[2]";
       placeholder.innerHTML = `
         <span class="text-4xl mb-2 opacity-40">🎨</span>
         <span class="panel-empty-title font-bangers text-xl text-slate-400 tracking-wide">Quadro #${index + 1} Vazio</span>
-        <span class="font-comic text-xs text-slate-400 mt-1 max-w-[240px]">Clique nos personagens, balões ou cenários na barra à esquerda para compor sua cena!</span>
+        <span class="font-comic text-xs text-slate-400 mt-1 max-w-[240px]">Clique nos personagens, balões, cenários ou pinte o fundo arrastando uma linha!</span>
       `;
       panel.appendChild(placeholder);
 
-      // Evento de clique para selecionar o quadro
+      // Evento de clique para selecionar o quadro (se não estiver em modo de desenho de linha)
       panel.addEventListener('mousedown', (e) => {
-        if (e.target === panel || e.target.classList.contains('panel-empty-placeholder')) {
+        if (!state.bgTool.active && (e.target === panel || e.target.classList.contains('panel-empty-placeholder'))) {
           selectPanel(index);
           deselectElement();
         }
@@ -1536,7 +1764,7 @@
       if (parentContainer) {
         parentContainer.appendChild(panel);
       }
-      state.panels.push({ id: index, element: panel, items: [] });
+      state.panels.push({ id: index, element: panel, items: [], bgLayers: [] });
       return panel;
     }
 
@@ -1554,6 +1782,448 @@
       if (lbl && state.panels[index]) {
         lbl.textContent = `Quadro Selecionado: #${index + 1} de ${state.panels.length}`;
       }
+      updateBgLayersUI();
+    }
+
+    /* =========================================================================
+       MOTOR DE PINTURA DO FUNDO POR ARRASTE DE LINHA NA CENA
+       ========================================================================= */
+
+    function toggleBgToolFromStage() {
+      const willBeActive = !state.bgTool.active;
+      if (willBeActive) {
+        switchTab('backgrounds');
+      } else {
+        setBgToolActive(false);
+      }
+    }
+
+    function setBgToolActive(active) {
+      state.bgTool.active = active;
+
+      // Mostra ou esconde as camadas de overlay de desenho em todos os quadros
+      document.querySelectorAll('.panel-bg-draw-overlay').forEach(ov => {
+        if (active) {
+          ov.classList.remove('hidden');
+        } else {
+          ov.classList.add('hidden');
+        }
+      });
+
+      // Atualiza botão do topo da prancheta
+      const btn = document.getElementById('btn-toggle-bg-mode');
+      const banner = document.getElementById('bg-mode-banner');
+      if (btn) {
+        if (active) {
+          btn.classList.remove('bg-white');
+          btn.classList.add('bg-comicYellow', 'ring-2', 'ring-black');
+        } else {
+          btn.classList.remove('bg-comicYellow', 'ring-2', 'ring-black');
+          btn.classList.add('bg-white');
+        }
+      }
+
+      if (banner) {
+        if (active) {
+          banner.classList.remove('hidden');
+          banner.classList.add('flex');
+        } else {
+          banner.classList.remove('flex');
+          banner.classList.add('hidden');
+        }
+      }
+
+      // Se ativou, desseleciona qualquer item para não conflitar
+      if (active) {
+        deselectElement();
+      }
+      updateBgBannerContent();
+    }
+
+    function selectBgPresetColor(colorHex, colorName) {
+      state.bgTool.color = colorHex;
+      state.bgTool.colorName = colorName;
+
+      // Atualiza bordas dos botões de cor
+      document.querySelectorAll('.bg-color-btn').forEach(btn => {
+        const c = btn.getAttribute('data-color');
+        if (c && c.toLowerCase() === colorHex.toLowerCase()) {
+          btn.classList.add('ring-2', 'ring-amber-500', 'bg-amber-50');
+          btn.classList.remove('bg-white');
+        } else {
+          btn.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50');
+          btn.classList.add('bg-white');
+        }
+      });
+
+      // Atualiza código e inputs
+      const codeLabel = document.getElementById('selected-color-code');
+      if (codeLabel) codeLabel.textContent = colorHex;
+      const customInput = document.getElementById('bg-custom-color-input');
+      if (customInput) customInput.value = colorHex;
+
+      updateBgBannerContent();
+      setBgToolActive(true);
+      showToast(`Cor selecionada: ${colorName}! Arraste uma linha no quadro.`, '🎨');
+    }
+
+    function setCustomBgColor(colorHex) {
+      state.bgTool.color = colorHex;
+      state.bgTool.colorName = 'Personalizada';
+
+      document.querySelectorAll('.bg-color-btn').forEach(btn => {
+        btn.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-50');
+        btn.classList.add('bg-white');
+      });
+
+      const codeLabel = document.getElementById('selected-color-code');
+      if (codeLabel) codeLabel.textContent = colorHex;
+
+      updateBgBannerContent();
+      setBgToolActive(true);
+    }
+
+    function setBgMode(mode) {
+      state.bgTool.mode = mode;
+      const btnHoriz = document.getElementById('btn-bg-mode-horizontal');
+      const btnBox = document.getElementById('btn-bg-mode-box');
+      const desc = document.getElementById('bg-mode-desc');
+
+      if (btnHoriz && btnBox) {
+        if (mode === 'horizontal') {
+          btnHoriz.className = "px-2 py-1.5 text-xs font-bold rounded border-2 border-black bg-comicYellow shadow-comic-sm flex items-center justify-center gap-1 transition";
+          btnBox.className = "px-2 py-1.5 text-xs font-bold rounded border border-black bg-white hover:bg-slate-100 shadow-comic-sm flex items-center justify-center gap-1 transition";
+          if (desc) desc.innerHTML = "💡 <b>Faixa Horizontal:</b> Arraste de cima para baixo para pintar faixas inteiras de céu, grama e terra.";
+        } else {
+          btnBox.className = "px-2 py-1.5 text-xs font-bold rounded border-2 border-black bg-comicYellow shadow-comic-sm flex items-center justify-center gap-1 transition";
+          btnHoriz.className = "px-2 py-1.5 text-xs font-bold rounded border border-black bg-white hover:bg-slate-100 shadow-comic-sm flex items-center justify-center gap-1 transition";
+          if (desc) desc.innerHTML = "💡 <b>Bloco Livre:</b> Arraste para delimitar exatamente o retângulo de cor entre o ponto inicial e final.";
+        }
+      }
+    }
+
+    function updateBgBannerContent() {
+      const pill = document.getElementById('banner-color-pill');
+      const name = document.getElementById('banner-color-name');
+      const ind = document.getElementById('stage-bg-color-indicator');
+      if (pill) pill.style.backgroundColor = state.bgTool.color;
+      if (name) name.textContent = state.bgTool.colorName;
+      if (ind) ind.style.backgroundColor = state.bgTool.color;
+    }
+
+    /* SISTEMA DE ARRASTE DA LINHA NA CENA */
+    function setupBgLineDrawing(overlay, panel, panelIndex) {
+      let isDrawing = false;
+      let startX = 0, startY = 0;
+      let guideSvg = null;
+      let badgeEl = null;
+
+      overlay.addEventListener('mousedown', (e) => {
+        if (!state.bgTool.active) return;
+        e.stopPropagation();
+        e.preventDefault();
+
+        selectPanel(panelIndex);
+        deselectElement();
+
+        const rect = panel.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+        isDrawing = true;
+
+        overlay.innerHTML = '';
+
+        // Cria SVG de guia e preview visual
+        guideSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        guideSvg.setAttribute('class', 'w-full h-full pointer-events-none absolute inset-0');
+        guideSvg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+        guideSvg.setAttribute('preserveAspectRatio', 'none');
+
+        // Retângulo sombreado com a cor
+        const previewRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        previewRect.setAttribute('fill', state.bgTool.color);
+        previewRect.setAttribute('fill-opacity', '0.7');
+        previewRect.setAttribute('stroke', '#000000');
+        previewRect.setAttribute('stroke-width', '2.5');
+        previewRect.setAttribute('stroke-dasharray', '5 4');
+
+        // Linha traçada pelo usuário
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('stroke', '#000000');
+        line.setAttribute('stroke-width', '3.5');
+        line.setAttribute('stroke-linecap', 'round');
+
+        // Círculo Ponto Inicial (Amarelo HQ)
+        const startCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        startCircle.setAttribute('r', '7');
+        startCircle.setAttribute('fill', '#FFE600');
+        startCircle.setAttribute('stroke', '#000000');
+        startCircle.setAttribute('stroke-width', '2.5');
+        startCircle.setAttribute('cx', startX);
+        startCircle.setAttribute('cy', startY);
+
+        // Círculo Ponto Final (Azul HQ)
+        const endCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        endCircle.setAttribute('r', '7');
+        endCircle.setAttribute('fill', '#00A8FF');
+        endCircle.setAttribute('stroke', '#000000');
+        endCircle.setAttribute('stroke-width', '2.5');
+        endCircle.setAttribute('cx', startX);
+        endCircle.setAttribute('cy', startY);
+
+        guideSvg.appendChild(previewRect);
+        guideSvg.appendChild(line);
+        guideSvg.appendChild(startCircle);
+        guideSvg.appendChild(endCircle);
+        overlay.appendChild(guideSvg);
+
+        // Indicador flutuante
+        badgeEl = document.createElement('div');
+        badgeEl.className = "absolute bg-black text-white text-[11px] font-bangers tracking-wider px-2 py-0.5 rounded shadow-comic-sm pointer-events-none z-50 flex items-center gap-1 transform -translate-y-full mb-1";
+        badgeEl.style.left = `${Math.min(rect.width - 120, Math.max(10, startX))}px`;
+        badgeEl.style.top = `${Math.max(25, startY)}px`;
+        badgeEl.innerHTML = `<span>${state.bgTool.colorName}</span>`;
+        overlay.appendChild(badgeEl);
+
+        const onMouseMove = (moveEvent) => {
+          if (!isDrawing) return;
+          const curRect = panel.getBoundingClientRect();
+          const rawX = moveEvent.clientX - curRect.left;
+          const rawY = moveEvent.clientY - curRect.top;
+          const curX = Math.max(0, Math.min(curRect.width, rawX));
+          const curY = Math.max(0, Math.min(curRect.height, rawY));
+
+          line.setAttribute('x1', startX);
+          line.setAttribute('y1', startY);
+          line.setAttribute('x2', curX);
+          line.setAttribute('y2', curY);
+          endCircle.setAttribute('cx', curX);
+          endCircle.setAttribute('cy', curY);
+
+          let rx = 0, ry = 0, rw = curRect.width, rh = curRect.height;
+          let labelInfo = '';
+
+          if (state.bgTool.mode === 'horizontal') {
+            ry = Math.min(startY, curY);
+            rh = Math.abs(curY - startY);
+            rx = 0;
+            rw = curRect.width;
+            const startPct = Math.round((ry / curRect.height) * 100);
+            const endPct = Math.round(((ry + rh) / curRect.height) * 100);
+            labelInfo = `${startPct}% a ${endPct}% (${Math.round(rh)}px)`;
+          } else { // modo box
+            rx = Math.min(startX, curX);
+            rw = Math.abs(curX - startX);
+            ry = Math.min(startY, curY);
+            rh = Math.abs(curY - startY);
+            labelInfo = `${Math.round(rw)}x${Math.round(rh)}px`;
+          }
+
+          previewRect.setAttribute('x', rx);
+          previewRect.setAttribute('y', ry);
+          previewRect.setAttribute('width', rw);
+          previewRect.setAttribute('height', rh);
+
+          if (badgeEl) {
+            badgeEl.style.left = `${Math.min(curRect.width - 140, Math.max(10, curX + 10))}px`;
+            badgeEl.style.top = `${Math.max(30, Math.min(curRect.height - 10, curY - 10))}px`;
+            badgeEl.innerHTML = `<span>${state.bgTool.colorName}: ${labelInfo}</span>`;
+          }
+        };
+
+        const onMouseUp = (upEvent) => {
+          if (!isDrawing) return;
+          isDrawing = false;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+
+          const curRect = panel.getBoundingClientRect();
+          const rawX = upEvent.clientX - curRect.left;
+          const rawY = upEvent.clientY - curRect.top;
+          const endX = Math.max(0, Math.min(curRect.width, rawX));
+          const endY = Math.max(0, Math.min(curRect.height, rawY));
+
+          overlay.innerHTML = '';
+
+          const verticalDist = Math.abs(endY - startY);
+          const totalDist = Math.hypot(endX - startX, endY - startY);
+
+          const isMinDist = state.bgTool.mode === 'horizontal' ? verticalDist >= 6 : totalDist >= 8;
+          if (!isMinDist) {
+            showToast('Arraste a linha uma distância maior para pintar a área!', 'ℹ️');
+            return;
+          }
+
+          let topPct = 0, heightPct = 100, leftPct = 0, widthPct = 100;
+          if (state.bgTool.mode === 'horizontal') {
+            const minY = Math.min(startY, endY);
+            const h = Math.abs(endY - startY);
+            topPct = (minY / curRect.height) * 100;
+            heightPct = (h / curRect.height) * 100;
+            leftPct = 0;
+            widthPct = 100;
+          } else {
+            const minX = Math.min(startX, endX);
+            const minY = Math.min(startY, endY);
+            const w = Math.abs(endX - startX);
+            const h = Math.abs(endY - startY);
+            leftPct = (minX / curRect.width) * 100;
+            widthPct = (w / curRect.width) * 100;
+            topPct = (minY / curRect.height) * 100;
+            heightPct = (h / curRect.height) * 100;
+          }
+
+          const panelData = state.panels[panelIndex];
+          if (!panelData.bgLayers) panelData.bgLayers = [];
+
+          panelData.bgLayers.push({
+            id: `bg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            color: state.bgTool.color,
+            colorName: state.bgTool.colorName,
+            mode: state.bgTool.mode,
+            top: Math.round(topPct * 10) / 10,
+            height: Math.round(heightPct * 10) / 10,
+            left: Math.round(leftPct * 10) / 10,
+            width: Math.round(widthPct * 10) / 10
+          });
+
+          renderPanelBgLayers(panelIndex);
+          checkPanelPlaceholder(panel);
+          updateBgLayersUI();
+          showToast(`Faixa ${state.bgTool.colorName} aplicada ao Quadro #${panelIndex + 1}!`, '🎨');
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    /* RENDERIZAÇÃO DAS CAMADAS DE FUNDO DE UM QUADRO */
+    function renderPanelBgLayers(panelIndex) {
+      const panelData = state.panels[panelIndex];
+      if (!panelData) return;
+      const container = panelData.element.querySelector('.panel-bg-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      (panelData.bgLayers || []).forEach(layer => {
+        const el = document.createElement('div');
+        el.id = layer.id;
+        el.className = "panel-bg-layer absolute pointer-events-none transition-all duration-150";
+        el.style.top = `${layer.top}%`;
+        el.style.height = `${layer.height}%`;
+        el.style.left = `${layer.left}%`;
+        el.style.width = `${layer.width}%`;
+        el.style.backgroundColor = layer.color;
+        container.appendChild(el);
+      });
+    }
+
+    function undoBgLayer(panelIndex = state.activePanelIndex) {
+      const panelData = state.panels[panelIndex];
+      if (!panelData || !panelData.bgLayers || panelData.bgLayers.length === 0) {
+        showToast('Nenhuma faixa de fundo para desfazer neste quadro!', 'ℹ️');
+        return;
+      }
+      const removed = panelData.bgLayers.pop();
+      renderPanelBgLayers(panelIndex);
+      checkPanelPlaceholder(panelData.element);
+      updateBgLayersUI();
+      showToast(`Faixa ${removed.colorName || 'de fundo'} desfeita!`, '↩️');
+    }
+
+    function clearPanelBg(panelIndex = state.activePanelIndex) {
+      const panelData = state.panels[panelIndex];
+      if (!panelData || !panelData.bgLayers || panelData.bgLayers.length === 0) {
+        showToast('O quadro já está sem cores de fundo!', 'ℹ️');
+        return;
+      }
+      panelData.bgLayers = [];
+      renderPanelBgLayers(panelIndex);
+      checkPanelPlaceholder(panelData.element);
+      updateBgLayersUI();
+      showToast('Cores de fundo do quadro removidas!', '🧹');
+    }
+
+    function fillWholePanelBg(color = state.bgTool.color, colorName = state.bgTool.colorName, panelIndex = state.activePanelIndex) {
+      const panelData = state.panels[panelIndex];
+      if (!panelData) return;
+      if (!panelData.bgLayers) panelData.bgLayers = [];
+      panelData.bgLayers.push({
+        id: `bg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        color: color,
+        colorName: colorName,
+        mode: 'horizontal',
+        top: 0,
+        height: 100,
+        left: 0,
+        width: 100
+      });
+      renderPanelBgLayers(panelIndex);
+      checkPanelPlaceholder(panelData.element);
+      updateBgLayersUI();
+      showToast(`Quadro #${panelIndex + 1} preenchido com ${colorName}!`, '🎨');
+    }
+
+    function applyBgCombo(comboType, panelIndex = state.activePanelIndex) {
+      const panelData = state.panels[panelIndex];
+      if (!panelData) return;
+      panelData.bgLayers = [];
+      if (comboType === 'sky_grass') {
+        panelData.bgLayers.push({ id: `bg-${Date.now()}-1`, color: '#BAE6FD', colorName: 'Azul (Céu)', top: 0, height: 65, left: 0, width: 100, mode: 'horizontal' });
+        panelData.bgLayers.push({ id: `bg-${Date.now()}-2`, color: '#B8E8B4', colorName: 'Verde (Grama)', top: 65, height: 35, left: 0, width: 100, mode: 'horizontal' });
+      } else if (comboType === 'sky_grass_earth') {
+        panelData.bgLayers.push({ id: `bg-${Date.now()}-1`, color: '#BAE6FD', colorName: 'Azul (Céu)', top: 0, height: 55, left: 0, width: 100, mode: 'horizontal' });
+        panelData.bgLayers.push({ id: `bg-${Date.now()}-2`, color: '#B8E8B4', colorName: 'Verde (Grama)', top: 55, height: 25, left: 0, width: 100, mode: 'horizontal' });
+        panelData.bgLayers.push({ id: `bg-${Date.now()}-3`, color: '#D9BF9D', colorName: 'Marrom (Terra)', top: 80, height: 20, left: 0, width: 100, mode: 'horizontal' });
+      } else if (comboType === 'sunset_earth') {
+        panelData.bgLayers.push({ id: `bg-${Date.now()}-1`, color: '#E0CEF7', colorName: 'Roxo (Pastel)', top: 0, height: 35, left: 0, width: 100, mode: 'horizontal' });
+        panelData.bgLayers.push({ id: `bg-${Date.now()}-2`, color: '#FFD5A5', colorName: 'Laranja (Pastel)', top: 35, height: 35, left: 0, width: 100, mode: 'horizontal' });
+        panelData.bgLayers.push({ id: `bg-${Date.now()}-3`, color: '#D9BF9D', colorName: 'Marrom (Terra)', top: 70, height: 30, left: 0, width: 100, mode: 'horizontal' });
+      }
+      renderPanelBgLayers(panelIndex);
+      checkPanelPlaceholder(panelData.element);
+      updateBgLayersUI();
+      showToast('Cenário pronto aplicado com sucesso!', '✨');
+    }
+
+    function removeSingleBgLayer(panelIndex, layerId) {
+      const panelData = state.panels[panelIndex];
+      if (!panelData || !panelData.bgLayers) return;
+      panelData.bgLayers = panelData.bgLayers.filter(l => l.id !== layerId);
+      renderPanelBgLayers(panelIndex);
+      checkPanelPlaceholder(panelData.element);
+      updateBgLayersUI();
+      showToast('Faixa de fundo removida!', '🗑️');
+    }
+
+    function updateBgLayersUI() {
+      const list = document.getElementById('bg-layers-list');
+      const badge = document.getElementById('bg-layers-count-badge');
+      if (!list || !badge) return;
+
+      const panelData = state.panels[state.activePanelIndex];
+      if (!panelData || !panelData.bgLayers || panelData.bgLayers.length === 0) {
+        badge.textContent = "0 faixas";
+        list.innerHTML = `<p class="text-[11px] text-slate-400 italic">Nenhuma faixa de cor ainda. Arraste uma linha no quadro para pintar!</p>`;
+        return;
+      }
+
+      badge.textContent = `${panelData.bgLayers.length} faixa${panelData.bgLayers.length > 1 ? 's' : ''}`;
+      list.innerHTML = panelData.bgLayers.map((layer, idx) => `
+        <div class="flex items-center justify-between p-1.5 bg-slate-50 border border-black rounded shadow-comic-sm">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <span class="w-4 h-4 rounded-full border border-black shrink-0" style="background-color: ${layer.color};"></span>
+            <div class="flex flex-col truncate">
+              <span class="font-bold text-xs truncate">${layer.colorName || 'Faixa'}</span>
+              <span class="text-[10px] text-slate-500 font-mono">${Math.round(layer.top)}% a ${Math.round(layer.top + layer.height)}%</span>
+            </div>
+          </div>
+          <button type="button" onclick="removeSingleBgLayer(${state.activePanelIndex}, '${layer.id}')" class="text-rose-600 hover:text-rose-800 p-1 hover:bg-rose-50 rounded" title="Excluir esta faixa">
+            🗑️
+          </button>
+        </div>
+      `).join('');
     }
 
     /* ADIÇÃO DE ELEMENTOS AO QUADRO SELECIONADO */
@@ -2252,24 +2922,43 @@
       setLayout('strip3');
 
       setTimeout(() => {
-        // QUADRO 1: A Cidade em perigo
+        // QUADRO 1: A Cidade em perigo (Pôr do sol: Roxo pastel 0-72%, Terra marrom 72-100%)
         const p1 = state.panels[0].element;
+        state.panels[0].bgLayers = [
+          { id: 'demo-bg-1', color: '#E0CEF7', colorName: 'Roxo (Pastel)', mode: 'horizontal', top: 0, height: 72, left: 0, width: 100 },
+          { id: 'demo-bg-2', color: '#D9BF9D', colorName: 'Marrom (Terra)', mode: 'horizontal', top: 72, height: 28, left: 0, width: 100 }
+        ];
+        renderPanelBgLayers(0);
+
         addDemoItem(p1, 'scenery', 'skyscrapers', 15, 160, 250, 220, 2);
         addDemoItem(p1, 'scenery', 'street_lamp', 220, 200, 80, 180, 4);
         addDemoItem(p1, 'characters', 'villain', 120, 190, 120, 180, 10);
         addDemoBubble(p1, 'narration', 'ENQUANTO A CIDADE DORME...', 15, 15, 260, 70, 30, '#FEF08A');
         addDemoBubble(p1, 'speech', 'Hoje tudo será meu! Hehehe!', 75, 95, 200, 90, 30, '#FFFFFF', 'left');
 
-        // QUADRO 2: O Herói surge voando com grito
+        // QUADRO 2: O Herói surge voando com grito (Céu azul 0-70%, Grama verde 70-100%)
         const p2 = state.panels[1].element;
+        state.panels[1].bgLayers = [
+          { id: 'demo-bg-3', color: '#BAE6FD', colorName: 'Azul (Céu)', mode: 'horizontal', top: 0, height: 70, left: 0, width: 100 },
+          { id: 'demo-bg-4', color: '#B8E8B4', colorName: 'Verde (Grama)', mode: 'horizontal', top: 70, height: 30, left: 0, width: 100 }
+        ];
+        renderPanelBgLayers(1);
+
         addDemoItem(p2, 'scenery', 'mountains', 15, 180, 320, 190, 2);
         addDemoItem(p2, 'scenery', 'sun_cloud', 170, 20, 140, 100, 3);
         addDemoItem(p2, 'characters', 'superhero', 90, 160, 140, 190, 10);
         addDemoItem(p2, 'effects', 'action_lines', 20, 30, 300, 170, 5);
         addDemoBubble(p2, 'shout', 'NÃO TÃO RÁPIDO, VILÃO!', 50, 60, 220, 90, 30, '#FFE600');
 
-        // QUADRO 3: O Golpe triunfal e o pet comemorando
+        // QUADRO 3: O Golpe triunfal e o pet comemorando (Céu azul 0-60%, Grama verde 60-85%, Terra marrom 85-100%)
         const p3 = state.panels[2].element;
+        state.panels[2].bgLayers = [
+          { id: 'demo-bg-5', color: '#BAE6FD', colorName: 'Azul (Céu)', mode: 'horizontal', top: 0, height: 60, left: 0, width: 100 },
+          { id: 'demo-bg-6', color: '#B8E8B4', colorName: 'Verde (Grama)', mode: 'horizontal', top: 60, height: 25, left: 0, width: 100 },
+          { id: 'demo-bg-7', color: '#D9BF9D', colorName: 'Marrom (Terra)', mode: 'horizontal', top: 85, height: 15, left: 0, width: 100 }
+        ];
+        renderPanelBgLayers(2);
+
         addDemoItem(p3, 'scenery', 'tree_oak', 10, 150, 180, 210, 3);
         addDemoItem(p3, 'characters', 'doge_hero', 35, 230, 120, 130, 10);
         addDemoItem(p3, 'effects', 'pow_boom', 130, 95, 190, 140, 20);
@@ -2278,6 +2967,7 @@
         state.panels.forEach(p => checkPanelPlaceholder(p.element));
 
         selectPanel(0);
+        updateBgLayersUI();
         showToast('História de exemplo carregada com sucesso!', '🦸‍♂️');
       }, 100);
     }
@@ -2340,9 +3030,13 @@
       state.panels.forEach(p => {
         const items = p.element.querySelectorAll('[data-type]');
         items.forEach(it => it.remove());
+        p.bgLayers = [];
+        const bgContainer = p.element.querySelector('.panel-bg-container');
+        if (bgContainer) bgContainer.innerHTML = '';
         checkPanelPlaceholder(p.element);
       });
       deselectElement();
+      updateBgLayersUI();
       showToast('Prancheta limpa com sucesso!', '🧹');
     }
 
